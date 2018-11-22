@@ -33,7 +33,6 @@ var microbenchmarks = []Microbenchmark{
 		Unit: "ns",
 		Pattern: regexp.MustCompile(`Syscall: (\d+) ns`),
 		Program: ProgramSysbench,
-		Arguments: nil,
 	},
 	Microbenchmark{
 		Name: "Basic vDSO call",
@@ -42,7 +41,6 @@ var microbenchmarks = []Microbenchmark{
 		Unit: "ns",
 		Pattern: regexp.MustCompile(`Implicit \(vDSO/commpage\): (\d+) ns`),
 		Program: ProgramSysbench,
-		Arguments: nil,
 	},
 	Microbenchmark{
 		Name: "Zero byte in-memory I/O",
