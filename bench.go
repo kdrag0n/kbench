@@ -50,7 +50,7 @@ func runMicrobenchmarks(trials int) {
 
 		fmt.Printf("Trial %d score: %.0f\n\n", trial + 1, accumulated)
 		finalAvg += accumulated
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Second)
 	}
 
 	finalScore := finalAvg / float64(trials)
