@@ -27,10 +27,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Preparing environment...\n")
+	fmt.Println("Preparing environment...")
 	setupPerfEnv()
 	defer cleanupPerfEnv()
 
-	fmt.Printf("Running benchmark...\n\n")
+	fmt.Print("Running warmup round...")
+	runWarmup()
+	fmt.Print("\n")
+
+	fmt.Print("Running benchmark...\n\n")
 	runMicrobenchmarks(trials)
 }

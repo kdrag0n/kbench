@@ -7,6 +7,19 @@ import (
 	"os/exec"
 )
 
+func runWarmup() {
+	for _, mb := range microbenchmarks {
+		switch (mb.Program) {
+		case ProgramSysbench:
+			exec.Command("./sysbench", mb.Arguments...).Output()
+		case ProgramPerf:
+			execPerf(mb.Arguments...)
+		}
+
+		fmt.Print(".")
+	}
+}
+
 func runMicrobenchmarks(trials int) {
 	var finalAvg float64
 
