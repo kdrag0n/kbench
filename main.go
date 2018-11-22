@@ -14,6 +14,8 @@ func check(err error) {
 }
 
 func main() {
+	fmt.Println("KBench by @kdrag0n")
+
 	var trials int
 	flag.IntVar(&trials, "trials", 3, "Number of trials to run for each microbenchmark")
 	flag.Parse()
