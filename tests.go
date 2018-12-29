@@ -39,7 +39,7 @@ var microbenchmarks = []Microbenchmark{
 		MoreIsBetter: false,
 		Factor: 2,
 		Unit: "ns",
-		Pattern: regexp.MustCompile(`Implicit \(vDSO/commpage\): (\d+) ns`),
+		Pattern: regexp.MustCompile(`Implicit: (\d+) ns`),
 		Program: ProgramSysbench,
 	},
 	Microbenchmark{
