@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
-	"fmt"
-	"os/user"
 	"flag"
+	"fmt"
+	"os"
+	"os/user"
 )
 
 func check(err error) {

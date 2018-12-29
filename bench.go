@@ -1,15 +1,15 @@
 package main
 
 import (
-	"time"
-	"strconv"
 	"fmt"
 	"os/exec"
+	"strconv"
+	"time"
 )
 
 func runWarmup() {
 	for _, mb := range microbenchmarks {
-		switch (mb.Program) {
+		switch mb.Program {
 		case ProgramSysbench:
 			exec.Command("./sysbench", mb.Arguments...).Output()
 		case ProgramPerf:
@@ -31,7 +31,7 @@ func runMicrobenchmarks(trials int) {
 			var err error
 			fmt.Printf("%s: ", mb.Name)
 
-			switch (mb.Program) {
+			switch mb.Program {
 			case ProgramSysbench:
 				out, err = exec.Command("./sysbench", mb.Arguments...).Output()
 			case ProgramPerf:
@@ -56,12 +56,16 @@ func runMicrobenchmarks(trials int) {
 			}
 
 			var better string
-			if mb.MoreIsBetter { better = "more" } else { better = "less" }
+			if mb.MoreIsBetter {
+				better = "more"
+			} else {
+				better = "less"
+			}
 			fmt.Printf("%.2f %s (%s is better), score: %.0f\n", value, mb.Unit, better, score)
 			accumulated += score
 		}
 
-		fmt.Printf("Trial %d score: %.0f\n\n", trial + 1, accumulated)
+		fmt.Printf("Trial %d score: %.0f\n\n", trial+1, accumulated)
 		finalAvg += accumulated
 		time.Sleep(2 * time.Second)
 	}
