@@ -54,7 +54,7 @@ var microbenchmarks = []Microbenchmark{
 	Microbenchmark{
 		Name:         "IPC messaging",
 		MoreIsBetter: false,
-		Factor:       1000,
+		Factor:       100,
 		Unit:         "sec",
 		Pattern:      regexp.MustCompile(`Total time: ([\d.]+) \[sec\]`),
 		Program:      ProgramPerf,
@@ -63,7 +63,7 @@ var microbenchmarks = []Microbenchmark{
 	Microbenchmark{
 		Name:         "Pipe IPC",
 		MoreIsBetter: true,
-		Factor:       1 / 1000.0,
+		Factor:       1 / 100.0,
 		Unit:         "ops/sec",
 		Pattern:      regexp.MustCompile(`(\d+) ops/sec`),
 		Program:      ProgramPerf,
@@ -81,7 +81,7 @@ var microbenchmarks = []Microbenchmark{
 	Microbenchmark{
 		Name:         "Serial futex wakeups",
 		MoreIsBetter: false,
-		Factor:       1000,
+		Factor:       100,
 		Unit:         "ms",
 		Pattern:      regexp.MustCompile(`Wokeup 32 of 32 threads in ([\d.]+) ms`),
 		Program:      ProgramPerf,
@@ -99,7 +99,7 @@ var microbenchmarks = []Microbenchmark{
 	Microbenchmark{
 		Name:         "Futex requeuing",
 		MoreIsBetter: false,
-		Factor:       10000,
+		Factor:       1000,
 		Unit:         "ms",
 		Pattern:      regexp.MustCompile(`Requeued 32 of 32 threads in ([\d.]+) ms`),
 		Program:      ProgramPerf,
