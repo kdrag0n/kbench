@@ -54,6 +54,9 @@ func runMicrobenchmarks(trials int) {
 			if !mb.MoreIsBetter {
 				score = 1000 - score
 			}
+			if score < 0 {
+				score = 0
+			}
 
 			var better string
 			if mb.MoreIsBetter {
@@ -67,7 +70,10 @@ func runMicrobenchmarks(trials int) {
 
 		fmt.Printf("Trial %d score: %.0f\n\n", trial+1, accumulated)
 		finalAvg += accumulated
-		time.Sleep(2 * time.Second)
+
+		if trial < trials - 1 {
+			time.Sleep(2 * time.Second)
+		}
 	}
 
 	finalScore := finalAvg / float64(trials)
