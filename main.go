@@ -27,6 +27,16 @@ func cmdMain() int {
 	flag.BoolVar(&monitorPower, "power", true, "Whether to monitor system power usage during the test. Only works accurately on Google Pixel devices.")
 	var stopAndroid bool
 	flag.BoolVar(&stopAndroid, "stop-android", true, "Whether to stop most of the Android system to prevent interference and reduce variables. Android will be restarted automatically when the benchmarks finish.")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Usage: %s [options]
+Option format: -[name]=[value]
+Example usage: kbench -trials=5 -power=false -stop-android=false
+
+Supported options:
+`, os.Args[0])
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	if trials == 0 {
