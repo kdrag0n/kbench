@@ -21,12 +21,13 @@ func runWarmup() {
 	}
 }
 
-func runMicrobenchmarks(trials int, monitorPower bool) {
+func runMicrobenchmarks(trials uint, monitorPower bool) {
 	final := decimal.NewFromFloat(1) // Initial value for multiplied scores
 	var powerAvg float64
+	var curTrial uint
 	before := time.Now()
 
-	for trial := 0; trial < trials; trial++ {
+	for curTrial = 0; curTrial < trials; curTrial++ {
 		var accumulated float64
 		stopChan := make(chan chan float64)
 		powerResultChan := make(chan float64, 1)
@@ -77,11 +78,11 @@ func runMicrobenchmarks(trials int, monitorPower bool) {
 		stopChan <- powerResultChan
 		trialPowerAvg := <- powerResultChan
 
-		fmt.Printf("Trial %d score: %.0f; power usage: %.0f mW\n\n", trial+1, accumulated, trialPowerAvg)
+		fmt.Printf("Trial %d score: %.0f; power usage: %.0f mW\n\n", curTrial+1, accumulated, trialPowerAvg)
 		final = final.Mul(decimal.NewFromFloat(accumulated))
 		powerAvg += trialPowerAvg
 
-		if trial < trials - 1 {
+		if curTrial < trials - 1 {
 			time.Sleep(2 * time.Second)
 		}
 	}

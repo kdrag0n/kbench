@@ -19,13 +19,18 @@ func check(err error) {
 func cmdMain() int {
 	fmt.Println("KBench by @kdrag0n")
 
-	var trials int
-	flag.IntVar(&trials, "trials", 3, "The number of times to run all the microbenchmarks. The geometric mean of each trial's score is calculated for the final score.")
+	var trials uint
+	flag.UintVar(&trials, "trials", 3, "The number of times to run all the microbenchmarks. The geometric mean of each trial's score is calculated for the final score.")
 	var monitorPower bool
 	flag.BoolVar(&monitorPower, "power", true, "Whether to monitor system power usage during the test. Only works accurately on Google Pixel devices.")
 	var stopAndroid bool
-	flag.BoolVar(&stopAndroid, "stop-android", true, "Whether to stop most of the Android system via init to prevent interference and reduce variables. Android will be restarted automatically when the benchmarks finish.")
+	flag.BoolVar(&stopAndroid, "stop-android", true, "Whether to stop most of the Android system to prevent interference and reduce variables. Android will be restarted automatically when the benchmarks finish.")
 	flag.Parse()
+
+	if trials == 0 {
+		fmt.Fprintf(os.Stderr, "Trial count must be non-zero!\n")
+		os.Exit(1)
+	}
 
 	user, err := user.Current()
 	check(err)
