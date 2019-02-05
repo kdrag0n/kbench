@@ -47,25 +47,28 @@ func cmdMain() int {
 	runWarmup()
 	fmt.Print("\n")
 
-	if _, err := os.Stat(GChargeStopLevel); monitorPower && !os.IsNotExist(err) {
-		before, err := ioutil.ReadFile(GChargeStopLevel)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to back up charge limit\n")
-		}
-
-		err = ioutil.WriteFile(GChargeStopLevel, []byte("2"), 0644)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to disable charging and power source\n")
-		}
-
-		defer func() {
-			err = ioutil.WriteFile(GChargeStopLevel, before, 0644)
+	_, err = os.Stat(GChargeStopLevel)
+	if monitorPower {
+		if os.IsNotExist(err) {
+			before, err := ioutil.ReadFile(GChargeStopLevel)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to restore backed up charge limit\n")
+				fmt.Fprintf(os.Stderr, "Unable to back up charge limit: %v\n", err)
 			}
-		}()
-	} else if monitorPower {
-		fmt.Fprintf(os.Stderr, "Unable to disable charging; power usage may not be accurate")
+
+			err = ioutil.WriteFile(GChargeStopLevel, []byte("2"), 0644)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Unable to disable charging and power source: %v\n", err)
+			}
+
+			defer func() {
+				err = ioutil.WriteFile(GChargeStopLevel, before, 0644)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Unable to restore backed up charge limit: %v\n", err)
+				}
+			}()
+		} else {
+			fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage may not be accurate\n", err)
+		}
 	}
 
 	if stopAndroid {
