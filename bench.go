@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -8,13 +9,51 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// Run the microbenchmark and calculate a normalized score from the results
+func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
+	var out []byte
+
+	switch mb.Program {
+	case ProgramSysbench:
+		out, err = exec.Command("./sysbench_" + runtime.GOARCH, mb.Arguments...).Output()
+	case ProgramPerf:
+		out, err = execPerf(mb.Arguments...)
+	default:
+		err = fmt.Errorf("microbenchmark '%s': Unsupported program %s", mb.Name, mb.Program)
+	}
+	if err != nil {
+		return
+	}
+
+	matches := mb.Pattern.FindSubmatch(out)
+	if len(matches) < 2 {
+		fmt.Println(string(out))
+		err = fmt.Errorf("microbenchmark '%s': Output of %s does not match expected format", mb.Name, mb.Program)
+		return
+	}
+
+	rawValue, err = strconv.ParseFloat(string(matches[1]), 64)
+	if err != nil {
+		return
+	}
+
+	score = rawValue * mb.Factor
+	if !mb.MoreIsBetter {
+		score = 1000 - score
+	}
+	if score < 0 {
+		score = 0
+	}
+
+	return
+}
+
 func runWarmup() {
 	for _, mb := range microbenchmarks {
-		switch mb.Program {
-		case ProgramSysbench:
-			exec.Command("./sysbench", mb.Arguments...).Output()
-		case ProgramPerf:
-			execPerf(mb.Arguments...)
+		_, _, err := mb.Run()
+		if err != nil {
+			fmt.Print("\n")
+			panic(err)
 		}
 
 		fmt.Print(".")
@@ -34,36 +73,10 @@ func runMicrobenchmarks(trials uint, monitorPower bool) {
 		go powerMonitor(stopChan)
 
 		for _, mb := range microbenchmarks {
-			var out []byte
-			var err error
 			fmt.Printf("%s: ", mb.Name)
 
-			switch mb.Program {
-			case ProgramSysbench:
-				out, err = exec.Command("./sysbench", mb.Arguments...).Output()
-			case ProgramPerf:
-				out, err = execPerf(mb.Arguments...)
-			default:
-				panic(fmt.Sprintf("Unsupported program %d specified for microbenchmark %s", mb.Program, mb.Name))
-			}
+			score, rawValue, err := mb.Run()
 			check(err)
-
-			matches := mb.Pattern.FindSubmatch(out)
-			if len(matches) < 2 {
-				fmt.Println(string(out))
-				panic(fmt.Sprintf("Output microbenchmark %s did not match expected format", mb.Name))
-			}
-
-			value, err := strconv.ParseFloat(string(matches[1]), 64)
-			check(err)
-
-			score := value * mb.Factor
-			if !mb.MoreIsBetter {
-				score = 1000 - score
-			}
-			if score < 0 {
-				score = 0
-			}
 
 			var better string
 			if mb.MoreIsBetter {
@@ -71,7 +84,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool) {
 			} else {
 				better = "less"
 			}
-			fmt.Printf("%.2f %s (%s is better), score: %.0f\n", value, mb.Unit, better, score)
+			fmt.Printf("%.2f %s (%s is better), score: %.0f\n", rawValue, mb.Unit, better, score)
 			accumulated += score
 		}
 

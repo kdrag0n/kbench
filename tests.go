@@ -4,14 +4,11 @@ import (
 	"regexp"
 )
 
-// A Program that can be run
-type Program uint16
-
 // Programs that can be run
 const (
-	ProgramSysbench Program = iota
-	ProgramPerf
-	ProgramUnknown
+	ProgramSysbench = "sysbench"
+	ProgramPerf = "perf"
+	ProgramUnknown = "???"
 )
 
 // Microbenchmark describes the details of a single microbenchmark.
@@ -21,7 +18,7 @@ type Microbenchmark struct {
 	Factor       float64
 	Unit         string
 	Pattern      *regexp.Regexp
-	Program      Program
+	Program      string
 	Arguments    []string
 }
 
