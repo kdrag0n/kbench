@@ -25,6 +25,8 @@ func cmdMain() int {
 	flag.UintVar(&trials, "trials", 3, "The number of times to run all the microbenchmarks. The geometric mean of each trial's score is calculated for the final score.")
 	var monitorPower bool
 	flag.BoolVar(&monitorPower, "power", true, "Whether to monitor system power usage during the test. Only works accurately on Google Pixel devices.")
+	var powerInterval uint
+	flag.UintVar(&powerInterval, "power-interval", 250, "The interval in milliseconds at which to sample power usage during benchmarks.")
 	var stopAndroid bool
 	flag.BoolVar(&stopAndroid, "stop-android", true, "Whether to stop most of the Android system to prevent interference and reduce variables. Android will be restarted automatically when the benchmarks finish.")
 
@@ -93,7 +95,7 @@ Supported options:
 	}
 
 	fmt.Print("Running benchmark...\n\n")
-	runMicrobenchmarks(trials, monitorPower)
+	runMicrobenchmarks(trials, monitorPower, powerInterval)
 
 	return 0
 }

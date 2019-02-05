@@ -17,8 +17,8 @@ func powerReadSys(attr string) float64 {
 	return float64(attrInt)
 }
 
-func powerMonitor(stop chan chan float64) {
-	ticker := time.NewTicker(250 * time.Millisecond)
+func powerMonitor(interval uint, stop chan chan float64) {
+	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	var total float64 // mW
 	samples := 0
 
