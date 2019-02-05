@@ -50,22 +50,22 @@ func cmdMain() int {
 	if _, err := os.Stat(GChargeStopLevel); monitorPower && !os.IsNotExist(err) {
 		before, err := ioutil.ReadFile(GChargeStopLevel)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: unable to back up charge limit\n")
+			fmt.Fprintf(os.Stderr, "Unable to back up charge limit\n")
 		}
 
 		err = ioutil.WriteFile(GChargeStopLevel, []byte("2"), 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: unable to disable charging and power source\n")
+			fmt.Fprintf(os.Stderr, "Unable to disable charging and power source\n")
 		}
 
 		defer func() {
 			err = ioutil.WriteFile(GChargeStopLevel, before, 0644)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: unable to restore backed up charge limit\n")
+				fmt.Fprintf(os.Stderr, "Unable to restore backed up charge limit\n")
 			}
 		}()
 	} else if monitorPower {
-		fmt.Fprintf(os.Stderr, "Warning: unable to disable charging; power usage may not be accurate")
+		fmt.Fprintf(os.Stderr, "Unable to disable charging; power usage may not be accurate")
 	}
 
 	if stopAndroid {
