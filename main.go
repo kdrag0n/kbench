@@ -9,7 +9,9 @@ import (
 	"os/exec"
 )
 
+// GChargeStopLevel is the path to the kernel battery charge limit pseudo-file.
 const GChargeStopLevel = "/sys/devices/platform/soc/soc:google,charger/charge_stop_level"
+
 func check(err error) {
 	if err != nil {
 		panic(err)
