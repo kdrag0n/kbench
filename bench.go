@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
+	"github.com/shopspring/decimal"
 )
 
 func runWarmup() {
@@ -21,7 +22,7 @@ func runWarmup() {
 }
 
 func runMicrobenchmarks(trials int, monitorPower bool) {
-	var finalAvg float64
+	final := decimal.NewFromFloat(1) // Initial value for multiplied scores
 	var powerAvg float64
 	before := time.Now()
 
@@ -77,7 +78,7 @@ func runMicrobenchmarks(trials int, monitorPower bool) {
 		trialPowerAvg := <- powerResultChan
 
 		fmt.Printf("Trial %d score: %.0f; power usage: %.0f mW\n\n", trial+1, accumulated, trialPowerAvg)
-		finalAvg += accumulated
+		final = final.Mul(decimal.NewFromFloat(accumulated))
 		powerAvg += trialPowerAvg
 
 		if trial < trials - 1 {
@@ -85,9 +86,19 @@ func runMicrobenchmarks(trials int, monitorPower bool) {
 		}
 	}
 
-	finalScore := finalAvg / float64(trials)
+	/* Take the geometric mean of `final` */
+	// Power: 1/n == nth root - compute this value
+	nthRootPow := decimal.NewFromFloat(1).Div(decimal.NewFromFloat(float64(trials)))
+	// Take the [trials]th root of the multiplied scores for the geometric mean
+	finalScore := final.Pow(nthRootPow)
+	// Convert the precise decimal into a float64 to display (we round it anyway)
+	finalScoreFloat, _ := finalScore.Float64()
+
+	/* Take the arithmetic mean of `powerAvg` */
 	powerAvg /= float64(trials)
-	fmt.Printf("\nFinal score: %.0f\n", finalScore)
+
+	/* Output results */
+	fmt.Printf("\nFinal score: %.0f\n", finalScoreFloat)
 	fmt.Printf("Average power usage: %.0f mW\n", powerAvg)
 	fmt.Println("Time elapsed:", time.Since(before))
 }
