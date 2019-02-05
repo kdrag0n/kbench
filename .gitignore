@@ -18,3 +18,5 @@
 !.vscode/extensions.json
 .history
 /kbench
+/kbench.tar*
+/res*.txt
