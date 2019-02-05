@@ -64,6 +64,8 @@ func cmdMain() int {
 				fmt.Fprintf(os.Stderr, "Warning: unable to restore backed up charge limit\n")
 			}
 		}()
+	} else if monitorPower {
+		fmt.Fprintf(os.Stderr, "Warning: unable to disable charging; power usage may not be accurate")
 	}
 
 	if stopAndroid {
