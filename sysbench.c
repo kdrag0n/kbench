@@ -40,15 +40,23 @@
 
 #include <sys/syscall.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <ctype.h>
 
+#define TEST_FILE_PATH "/proc/sys/kernel/ostype"
 #define NS_PER_SEC 1000000000
 #define US_PER_SEC 1000000
+#define true 1
+#define false 0
 
+typedef _Bool bool;
 typedef unsigned long ulong;
 typedef long (*bench_impl)(void);
 
@@ -64,6 +72,31 @@ static long time_syscall_mb(void) {
 static long time_implicit_mb(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
+}
+
+static long mmap_mb(void) {
+    int fd = open(TEST_FILE_PATH, O_RDONLY); // open file: read-only
+    int len = lseek(fd, 0, SEEK_END); // seek to end to get length
+
+    void *data = mmap(NULL, len, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0); // mmap it: read-only, preload contents at kernel's discretion
+	void *copy = malloc(len);
+	memcpy(copy, data, len); // copy data (effectively reading it)
+	munmap(data, len); // unmap it
+
+	close(fd);
+}
+
+static long file_mb(void) {
+	FILE *f = fopen(TEST_FILE_PATH, "rb"); // open file: read + binary handling
+
+	fseek(f, 0, SEEK_END); // seek to end for length
+	long len = ftell(f); // get current position at end -> length
+	fseek(f, 0, SEEK_SET); // seek back to beginning to read
+
+	void *buf = malloc(len);
+	fread(buf, 1, len, f); // read 1 * len bytes from f into buf
+
+	fclose(f);
 }
 
 static ulong get_arg(int argc, char** argv, int index, ulong default_value) {
@@ -106,24 +139,18 @@ static long run_bench_ns(bench_impl inner_call, ulong calls, ulong iters, ulong 
 
         putchar('.');
         fflush(stdout);
-        usleep(US_PER_SEC / 4); // 250 ms
+        usleep(US_PER_SEC / 8); // 125 ms
     }
 
     return best_ns1;
 }
 
-int main(int argc, char** argv) {
-    ulong calls = get_arg(argc, argv, 1, 100000);
-    ulong iters = get_arg(argc, argv, 2, 32);
-    ulong reps = get_arg(argc, argv, 3, 5);
+int bench_time(int argc, char** argv) {
+    ulong calls = get_arg(argc, argv, 2, 100000);
+    ulong iters = get_arg(argc, argv, 3, 32);
+    ulong reps = get_arg(argc, argv, 4, 5);
 
-    if (argc == 1) {
-        printf("Usage: %s [# of calls] [# of iterations] [# of repetitions]\n"
-               "All arguments are optional.\n"
-               "\n", argv[0]);
-    }
-
-    printf("Sysbench: syscall benchmark by kdrag0n\n"
+    printf("Time benchmark:\n"
            "%lu calls for %lu iterations with %lu repetitions\n"
            "The implicit call may be backed by vDSO.\n"
            "\n"
@@ -138,4 +165,73 @@ int main(int argc, char** argv) {
     printf("Time implicit: %ld ns\n", best_ns_implicit);
 
     return 0;
+}
+
+int bench_file(int argc, char** argv) {
+    ulong calls = get_arg(argc, argv, 2, 100);
+    ulong iters = get_arg(argc, argv, 3, 128);
+    ulong reps = get_arg(argc, argv, 4, 5);
+
+    printf("File benchmark:\n"
+           "%lu calls for %lu iterations with %lu repetitions\n"
+           "\n"
+           "\n", calls, iters, reps);
+
+    long best_ns_mmap = run_bench_ns(mmap_mb, calls, iters, reps);
+    long best_ns_file = run_bench_ns(file_mb, calls, iters, reps);
+
+    putchar('\n');
+
+    printf("File via mmap: %ld ns\n", best_ns_mmap);
+    printf("File via fd I/O: %ld ns\n", best_ns_file);
+
+    return 0;
+}
+
+int main(int argc, char** argv) {
+	int ret;
+	bool do_time = false;
+	bool do_file = false;
+
+	printf("Sysbench: syscall benchmark by kdrag0n\n\n");
+    if (argc == 1) { // No arguments supplied
+        printf("Optional usage: %s [mode: [t]ime, [f]ile, [a]ll] [# of calls] [# of iterations] [# of repetitions]\n"
+               "\n", argv[0]);
+    }
+
+	char mode = 'a';
+	if (argc >= 2) { // 1+ arguments
+		mode = tolower(argv[1][0]); // First letter of 1st argument
+		if (mode != 't' && mode != 'f' && mode != 'a') {
+			fprintf(stderr, "Invalid mode '%c'! Valid modes are: [t]ime, [f]ile, [a]ll\n", mode);
+			return 1;
+		}
+	}
+
+	switch (mode) {
+	case 't':
+		do_time = true;
+		break;
+	case 'f':
+		do_file = true;
+		break;
+	case 'a':
+		do_time = true;
+		do_file = true;
+		break;
+	}
+
+	if (do_time) {
+		ret = bench_time(argc, argv);
+		if (ret)
+			return ret;
+	}
+
+	if (do_file) {
+		ret = bench_file(argc, argv);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
 }
