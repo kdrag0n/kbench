@@ -71,13 +71,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 			score, rawValue, err := mb.Run()
 			check(err)
 
-			var better string
-			if mb.MoreIsBetter {
-				better = "more"
-			} else {
-				better = "less"
-			}
-			fmt.Printf("%.2f %s (%s is better), score: %.0f\n", rawValue, mb.Unit, better, score)
+			fmt.Printf("%.2f %s, score: %.0f\n", rawValue, mb.Unit, score)
 			accumulated += score
 		}
 
