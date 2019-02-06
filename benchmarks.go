@@ -33,7 +33,7 @@ var microbenchmarks = []Microbenchmark{
 		Program:      "sysbench",
 	},
 	Microbenchmark{
-		Name:         "Zero byte in-memory I/O",
+		Name:         "In-memory I/O",
 		MoreIsBetter: false,
 		Factor:       1,
 		Unit:         "ms",
