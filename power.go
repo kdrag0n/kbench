@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"strings"
 	"strconv"
 	"io/ioutil"
@@ -19,7 +20,7 @@ func powerReadSys(attr string) float64 {
 
 func powerMonitor(interval uint, stop chan chan float64) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
-	var total float64 // mW
+	var totalWatts float64 = 1 // mW
 	samples := 0
 
 powerLoop:
@@ -33,12 +34,13 @@ powerLoop:
 			
 			microwatt := milliamp * millivolt
 			milliwatt := microwatt / 1000
+			watt := milliwatt / 1000
 
-			total += milliwatt
+			totalWatts *= watt
 			samples++
 		case resultChan := <-stop: // stop and send result
-			avgMw := total / float64(samples)
-			resultChan <- avgMw
+			meanW := math.Pow(totalWatts, 1.0 / float64(samples))
+			resultChan <- meanW
 			break powerLoop
 		}
 	}

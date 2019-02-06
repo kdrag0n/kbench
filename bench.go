@@ -53,17 +53,17 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 	c := apd.BaseContext.WithPrecision(5)
 	ed := apd.MakeErrDecimal(c)
 	final := apd.New(1, 0) // Initial value for multiplied scores
-	var powerAvg float64
 	var curTrial uint
-	before := time.Now()
 
+	stopChan := make(chan chan float64)
+	powerResultChan := make(chan float64, 1)
+	if monitorPower {
+		go powerMonitor(powerInterval, stopChan)
+	}
+
+	before := time.Now()
 	for curTrial = 0; curTrial < trials; curTrial++ {
 		var accumulated float64
-		stopChan := make(chan chan float64)
-		powerResultChan := make(chan float64, 1)
-		if monitorPower {
-			go powerMonitor(powerInterval, stopChan)
-		}
 
 		for _, mb := range microbenchmarks {
 			fmt.Printf("%s: ", mb.Name)
@@ -81,15 +81,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 			accumulated += score
 		}
 
-		trialPowerSuf := ""
-		if monitorPower {
-			stopChan <- powerResultChan
-			trialPowerAvg := <- powerResultChan
-			powerAvg += trialPowerAvg
-			trialPowerSuf = fmt.Sprintf("; power usage: %.0f mW", trialPowerAvg)
-		}
-
-		fmt.Printf("Trial %d score: %.0f%s\n\n", curTrial+1, accumulated, trialPowerSuf)
+		fmt.Printf("Trial %d score: %.0f\n\n", curTrial+1, accumulated)
 		score, _, err := c.NewFromString(strconv.FormatFloat(accumulated, 'f', -1, 64))
 		check(err)
 		ed.Mul(final, final, score)
@@ -98,6 +90,14 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		if curTrial < trials - 1 {
 			time.Sleep(1 * time.Second)
 		}
+	}
+
+	/* Get the geometric mean of the power usage during benchmarks */
+	var powerMean float64
+	if monitorPower {
+		stopChan <- powerResultChan
+		powerMean = <- powerResultChan
+		powerMean *= 1000 // W -> mW
 	}
 
 	/* Take the geometric mean of `final` */
@@ -113,13 +113,10 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 	finalScoreFloat, err := finalScore.Float64()
 	check(err)
 
-	/* Take the arithmetic mean of `powerAvg` */
-	powerAvg /= float64(trials)
-
 	/* Output results */
 	fmt.Printf("\nFinal score: %.0f\n", finalScoreFloat)
 	if monitorPower {
-		fmt.Printf("Average power usage: %.0f mW\n", powerAvg)
+		fmt.Printf("Power usage: %.0f mW\n", powerMean)
 	}
 	fmt.Println("Time elapsed:", time.Since(before))
 }
