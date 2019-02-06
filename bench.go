@@ -118,6 +118,8 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 
 	/* Output results */
 	fmt.Printf("\nFinal score: %.0f\n", finalScoreFloat)
-	fmt.Printf("Average power usage: %.0f mW\n", powerAvg)
+	if monitorPower {
+		fmt.Printf("Average power usage: %.0f mW\n", powerAvg)
+	}
 	fmt.Println("Time elapsed:", time.Since(before))
 }
