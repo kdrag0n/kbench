@@ -96,7 +96,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		check(ed.Err())
 
 		if curTrial < trials - 1 {
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}
 
