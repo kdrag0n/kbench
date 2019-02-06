@@ -26,8 +26,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -50,60 +50,20 @@
 #define US_PER_SEC 1000000
 
 typedef unsigned long ulong;
-typedef long (*loop_impl)(ulong, ulong);
+typedef long (*bench_impl)(void);
 
-static long true_ns(struct timespec ts) {
+static inline long true_ns(struct timespec ts) {
     return ts.tv_nsec + (ts.tv_sec * NS_PER_SEC);
 }
 
-static long syscall_loop(ulong calls, ulong iters) {
-    long best_ns = LONG_MAX;
-
-    for (unsigned int i = 0; i < iters; i++) {
-        struct timespec before;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &before);
-
-        struct timespec holder;
-        for (unsigned int call = 0; call < calls; call++) {
-            syscall(__NR_clock_gettime, CLOCK_MONOTONIC, &holder);
-        }
-
-        struct timespec after;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &after);
-
-        long elapsed_ns = true_ns(after) - true_ns(before);
-        if (elapsed_ns < best_ns) {
-            best_ns = elapsed_ns;
-        }
-    }
-
-    best_ns /= calls; // per syscall in the loop
-    return best_ns;
+static long time_syscall_mb(void) {
+    struct timespec ts;
+    syscall(__NR_clock_gettime, CLOCK_MONOTONIC, &ts);
 }
 
-static long implicit_loop(ulong calls, ulong iters) {
-    long best_ns = LONG_MAX;
-
-    for (unsigned int i = 0; i < iters; i++) {
-        struct timespec before;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &before);
-
-        struct timespec holder;
-        for (unsigned int call = 0; call < calls; call++) {
-            clock_gettime(CLOCK_MONOTONIC, &holder);
-        }
-
-        struct timespec after;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &after);
-
-        long elapsed_ns = true_ns(after) - true_ns(before);
-        if (elapsed_ns < best_ns) {
-            best_ns = elapsed_ns;
-        }
-    }
-
-    best_ns /= calls; // per call in the loop
-    return best_ns;
+static long time_implicit_mb(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
 }
 
 static ulong get_arg(int argc, char** argv, int index, ulong default_value) {
@@ -117,20 +77,39 @@ static ulong get_arg(int argc, char** argv, int index, ulong default_value) {
     return value;
 }
 
-static long test_loop_best_ns(loop_impl call_loop, ulong calls, ulong iters, ulong reps) {
-    long best_ns = LONG_MAX;
+static long run_bench_ns(bench_impl inner_call, ulong calls, ulong iters, ulong reps) {
+    long best_ns1 = LONG_MAX;
     for (unsigned int rep = 0; rep < reps; rep++) {
-        long elapsed_ns = call_loop(calls, iters);
-        if (elapsed_ns < best_ns) {
-            best_ns = elapsed_ns;
+        long best_ns2 = LONG_MAX;
+
+        for (unsigned int i = 0; i < iters; i++) {
+            struct timespec before;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+
+            for (unsigned int call = 0; call < calls; call++) {
+                inner_call();
+            }
+
+            struct timespec after;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+
+            long elapsed_ns = true_ns(after) - true_ns(before);
+            if (elapsed_ns < best_ns2) {
+                best_ns2 = elapsed_ns;
+            }
+        }
+        best_ns2 /= calls; // per call in the loop
+
+        if (best_ns2 < best_ns1) {
+            best_ns1 = best_ns2;
         }
 
         putchar('.');
         fflush(stdout);
-        usleep(US_PER_SEC / 2); // 500 ms
+        usleep(US_PER_SEC / 4); // 250 ms
     }
 
-    return best_ns;
+    return best_ns1;
 }
 
 int main(int argc, char** argv) {
@@ -144,19 +123,19 @@ int main(int argc, char** argv) {
                "\n", argv[0]);
     }
 
-    printf("Sysbench - syscall tester by kdrag0n\n"
+    printf("Sysbench: syscall benchmark by kdrag0n\n"
            "%lu calls for %lu iterations with %lu repetitions\n"
-           "The implicit call can be backed by a true syscall (in lieu of faster routines), vDSO (Linux), or commpage (macOS).\n"
+           "The implicit call may be backed by vDSO.\n"
            "\n"
            "\n", calls, iters, reps);
     
-    long best_ns_syscall = test_loop_best_ns(syscall_loop, calls, iters, reps);
-    long best_ns_implicit = test_loop_best_ns(implicit_loop, calls, iters, reps);
+    long best_ns_syscall = run_bench_ns(time_syscall_mb, calls, iters, reps);
+    long best_ns_implicit = run_bench_ns(time_implicit_mb, calls, iters, reps);
 
     putchar('\n');
 
-    printf("Syscall: %ld ns\n", best_ns_syscall);
-    printf("Implicit: %ld ns\n", best_ns_implicit);
+    printf("Time syscall: %ld ns\n", best_ns_syscall);
+    printf("Time implicit: %ld ns\n", best_ns_implicit);
 
     return 0;
 }
