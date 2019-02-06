@@ -61,8 +61,16 @@ Supported options:
 		return 1
 	}
 
-	_, err = os.Stat(GChargeStopLevel)
 	if monitorPower {
+		voltNow := PsyPrefix + "voltage_now"
+		_, err = os.Stat(voltNow)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to check voltage: %v; disabling power monitor\n", voltNow, err)
+			monitorPower = false
+			goto skipChargeLimit
+		}
+
+		_, err = os.Stat(GChargeStopLevel)
 		if !os.IsNotExist(err) {
 			before, err := ioutil.ReadFile(GChargeStopLevel)
 			if err != nil {
@@ -85,6 +93,7 @@ Supported options:
 		}
 	}
 
+skipChargeLimit:
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
 		exec.Command("/system/bin/stop").Run()

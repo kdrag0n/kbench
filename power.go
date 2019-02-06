@@ -8,8 +8,10 @@ import (
 	"time"
 )
 
+const PsyPrefix = "/sys/class/power_supply/battery/"
+
 func powerReadSys(attr string) float64 {
-	raw, err := ioutil.ReadFile("/sys/class/power_supply/battery/" + attr)
+	raw, err := ioutil.ReadFile(PsyPrefix + attr)
 	check(err)
 
 	attrInt, err := strconv.Atoi(strings.TrimSuffix(string(raw), "\n"))
