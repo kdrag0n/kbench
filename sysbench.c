@@ -58,23 +58,23 @@
 
 typedef _Bool bool;
 typedef unsigned long ulong;
-typedef long (*bench_impl)(void);
+typedef void (*bench_impl)(void);
 
 static inline long true_ns(struct timespec ts) {
     return ts.tv_nsec + (ts.tv_sec * NS_PER_SEC);
 }
 
-static long time_syscall_mb(void) {
+static void time_syscall_mb(void) {
     struct timespec ts;
     syscall(__NR_clock_gettime, CLOCK_MONOTONIC, &ts);
 }
 
-static long time_implicit_mb(void) {
+static void time_implicit_mb(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 }
 
-static long mmap_mb(void) {
+static void mmap_mb(void) {
     int fd = open(TEST_FILE_PATH, O_RDONLY); // open file: read-only
     int len = lseek(fd, 0, SEEK_END); // seek to end to get length
 
@@ -86,7 +86,7 @@ static long mmap_mb(void) {
 	close(fd);
 }
 
-static long file_mb(void) {
+static void file_mb(void) {
 	FILE *f = fopen(TEST_FILE_PATH, "rb"); // open file: read + binary handling
 
 	fseek(f, 0, SEEK_END); // seek to end for length
