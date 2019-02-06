@@ -23,6 +23,7 @@ var microbenchmarks = []Microbenchmark{
 		Unit:         "ns",
 		Pattern:      regexp.MustCompile(`Syscall: (\d+) ns`),
 		Program:      "sysbench",
+		Arguments:    []string{"100000", "25", "3"},
 	},
 	Microbenchmark{
 		Name:         "Basic vDSO call",
@@ -31,6 +32,7 @@ var microbenchmarks = []Microbenchmark{
 		Unit:         "ns",
 		Pattern:      regexp.MustCompile(`Implicit: (\d+) ns`),
 		Program:      "sysbench",
+		Arguments:    []string{"100000", "25", "3"},
 	},
 	Microbenchmark{
 		Name:         "In-memory I/O",
