@@ -61,7 +61,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		go powerMonitor(powerInterval, stopChan)
 	}
 
-	before := time.Now()
+	beforeTrials := time.Now()
 	for curTrial = 0; curTrial < trials; curTrial++ {
 		fmt.Printf("Trial %d:\n", curTrial + 1)
 
@@ -69,10 +69,11 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		for _, mb := range microbenchmarks {
 			fmt.Printf("  %s: ", mb.Name)
 
+			beforeBench := time.Now()
 			score, rawValue, err := mb.Run()
 			check(err)
 
-			fmt.Printf("%.2f %s, score: %.0f\n", rawValue, mb.Unit, score)
+			fmt.Printf("%.2f %s, score: %.0f, time: %s\n", rawValue, mb.Unit, score, formatDuration(time.Since(beforeBench)))
 			accumulated += score
 		}
 
@@ -109,5 +110,5 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 	if monitorPower {
 		fmt.Printf("Power usage: %.0f mW\n", powerMean)
 	}
-	fmt.Println("Time elapsed:", time.Since(before))
+	fmt.Printf("Time elapsed: %s\n", formatDuration(time.Since(beforeTrials)))
 }
