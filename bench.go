@@ -13,7 +13,7 @@ import (
 )
 
 // Run the microbenchmark and calculate a normalized score from the results
-func (mb *Microbenchmark) Run(resultCache map[uint64][]byte) (score float64, rawValue float64, err error) {
+func (mb *Microbenchmark) Run(resultCache map[uint64][]byte) (score float64, rawValue float64, cached bool, err error) {
 	var out []byte
 	var progPath string
 	var hash uint64
@@ -22,6 +22,7 @@ func (mb *Microbenchmark) Run(resultCache map[uint64][]byte) (score float64, raw
 	if mb.CacheOutput {
 		hash = mb.HashCmd()
 		if out, foundHash = resultCache[hash]; foundHash {
+			cached = true
 			goto skipRun
 		}
 	}
@@ -104,10 +105,15 @@ func runMicrobenchmarks(trials uint, speed Speed, monitorPower bool, powerInterv
 			fmt.Printf("  %s: ", mb.Name)
 
 			beforeBench := time.Now()
-			score, rawValue, err := mb.Run(resultCache)
+			score, rawValue, cached, err := mb.Run(resultCache)
 			check(err)
 
-			fmt.Printf("%.2f %s, score: %.0f, time: %s\n", rawValue, mb.Unit, score, formatDuration(time.Since(beforeBench)))
+			timeFmt := "%s"
+			if cached {
+				timeFmt = "[cached: %s]"
+			}
+			timeStr := fmt.Sprintf(timeFmt, formatDuration(time.Since(beforeBench)))
+			fmt.Printf("%.2f %s, score: %.0f, time: %s\n", rawValue, mb.Unit, score, timeStr)
 			accumulated += score
 		}
 
