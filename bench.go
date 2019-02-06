@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
-	"github.com/shopspring/decimal"
+	"github.com/cockroachdb/apd"
 )
 
 // Run the microbenchmark and calculate a normalized score from the results
@@ -50,7 +50,9 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 }
 
 func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
-	final := decimal.NewFromFloat(1) // Initial value for multiplied scores
+	c := apd.BaseContext.WithPrecision(5)
+	ed := apd.MakeErrDecimal(c)
+	final := apd.New(1, 0) // Initial value for multiplied scores
 	var powerAvg float64
 	var curTrial uint
 	before := time.Now()
@@ -88,7 +90,10 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		}
 
 		fmt.Printf("Trial %d score: %.0f%s\n\n", curTrial+1, accumulated, trialPowerSuf)
-		final = final.Mul(decimal.NewFromFloat(accumulated))
+		score, _, err := c.NewFromString(strconv.FormatFloat(accumulated, 'f', -1, 64))
+		check(err)
+		ed.Mul(final, final, score)
+		check(ed.Err())
 
 		if curTrial < trials - 1 {
 			time.Sleep(2 * time.Second)
@@ -96,12 +101,17 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 	}
 
 	/* Take the geometric mean of `final` */
-	// Power: 1/n == nth root - compute this value
-	nthRootPow := decimal.NewFromFloat(1).Div(decimal.NewFromFloat(float64(trials)))
+	// nthRootPow := 1 / trials
+	nthRootPow := apd.New(1, 0)
+	ed.Quo(nthRootPow, nthRootPow, apd.New(int64(trials), 0))
+	check(ed.Err())
 	// Take the [trials]th root of the multiplied scores for the geometric mean
-	finalScore := final.Pow(nthRootPow)
+	finalScore := apd.New(1, 0)
+	ed.Pow(finalScore, final, nthRootPow)
+	check(ed.Err())
 	// Convert the precise decimal into a float64 to display (we round it anyway)
-	finalScoreFloat, _ := finalScore.Float64()
+	finalScoreFloat, err := finalScore.Float64()
+	check(err)
 
 	/* Take the arithmetic mean of `powerAvg` */
 	powerAvg /= float64(trials)
