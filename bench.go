@@ -80,10 +80,6 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		check(err)
 		ed.Mul(final, final, score)
 		check(ed.Err())
-
-		if curTrial < trials - 1 {
-			time.Sleep(1 * time.Second)
-		}
 	}
 
 	/* Get the geometric mean of the power usage during benchmarks */
