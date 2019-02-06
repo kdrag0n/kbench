@@ -3,6 +3,7 @@ package main
 import (
 	"runtime"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -13,17 +14,16 @@ import (
 func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 	var out []byte
 
-	switch mb.Program {
-	case ProgramSysbench:
-		out, err = exec.Command("./sysbench_" + runtime.GOARCH, mb.Arguments...).CombinedOutput()
-	case ProgramPerf:
-		out, err = exec.Command("./perf_" + runtime.GOARCH, mb.Arguments...).CombinedOutput()
-	default:
-		err = fmt.Errorf("microbenchmark '%s': Unsupported program %s", mb.Name, mb.Program)
+	// Use bundled program if possible, otherwise resort to system PATH
+	progPath := runtime.GOARCH + "/" + mb.Program
+	if _, err = os.Stat(progPath); err != nil {
+		if !os.IsNotExist(err) { // Not existing is normal, anything else is a warning
+			fmt.Fprintf(os.Stderr, "Unable to stat '%s': %v; resorting to system PATH\n", progPath, err)
+		}
+
+		progPath = mb.Program
 	}
-	if err != nil {
-		return
-	}
+	out, err = exec.Command(progPath, mb.Arguments...).CombinedOutput()
 
 	matches := mb.Pattern.FindSubmatch(out)
 	if len(matches) < 2 {
@@ -59,7 +59,9 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 		var accumulated float64
 		stopChan := make(chan chan float64)
 		powerResultChan := make(chan float64, 1)
-		go powerMonitor(powerInterval, stopChan)
+		if monitorPower {
+			go powerMonitor(powerInterval, stopChan)
+		}
 
 		for _, mb := range microbenchmarks {
 			fmt.Printf("%s: ", mb.Name)
@@ -77,12 +79,16 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 			accumulated += score
 		}
 
-		stopChan <- powerResultChan
-		trialPowerAvg := <- powerResultChan
+		trialPowerSuf := ""
+		if monitorPower {
+			stopChan <- powerResultChan
+			trialPowerAvg := <- powerResultChan
+			powerAvg += trialPowerAvg
+			trialPowerSuf = fmt.Sprintf("; power usage: %.0f mW", trialPowerAvg)
+		}
 
-		fmt.Printf("Trial %d score: %.0f; power usage: %.0f mW\n\n", curTrial+1, accumulated, trialPowerAvg)
+		fmt.Printf("Trial %d score: %.0f%s\n\n", curTrial+1, accumulated, trialPowerSuf)
 		final = final.Mul(decimal.NewFromFloat(accumulated))
-		powerAvg += trialPowerAvg
 
 		if curTrial < trials - 1 {
 			time.Sleep(2 * time.Second)

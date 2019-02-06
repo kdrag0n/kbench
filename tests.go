@@ -4,13 +4,6 @@ import (
 	"regexp"
 )
 
-// Programs that can be run
-const (
-	ProgramSysbench = "sysbench"
-	ProgramPerf = "perf"
-	ProgramUnknown = "???"
-)
-
 // Microbenchmark describes the details of a single microbenchmark.
 type Microbenchmark struct {
 	Name         string
@@ -29,7 +22,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       2,
 		Unit:         "ns",
 		Pattern:      regexp.MustCompile(`Syscall: (\d+) ns`),
-		Program:      ProgramSysbench,
+		Program:      "sysbench",
 	},
 	Microbenchmark{
 		Name:         "Basic vDSO call",
@@ -37,7 +30,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       2,
 		Unit:         "ns",
 		Pattern:      regexp.MustCompile(`Implicit: (\d+) ns`),
-		Program:      ProgramSysbench,
+		Program:      "sysbench",
 	},
 	Microbenchmark{
 		Name:         "Zero byte in-memory I/O",
@@ -45,7 +38,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       1,
 		Unit:         "ms",
 		Pattern:      regexp.MustCompile(`([\d.]+)\s+task-clock \(msec\)`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"stat", "-B", "dd", "if=/dev/zero", "of=/dev/null", "count=1000000"},
 	},
 	Microbenchmark{
@@ -54,7 +47,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       100,
 		Unit:         "sec",
 		Pattern:      regexp.MustCompile(`Total time: ([\d.]+) \[sec\]`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "sched", "messaging"},
 	},
 	Microbenchmark{
@@ -63,7 +56,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       1 / 100.0,
 		Unit:         "ops/sec",
 		Pattern:      regexp.MustCompile(`(\d+) ops/sec`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "sched", "pipe"},
 	},
 	Microbenchmark{
@@ -72,7 +65,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       1 / 10000.0,
 		Unit:         "ops/sec",
 		Pattern:      regexp.MustCompile(`Averaged (\d+) operations/sec`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "hash"},
 	},
 	Microbenchmark{
@@ -81,7 +74,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       100,
 		Unit:         "ms",
 		Pattern:      regexp.MustCompile(`Wokeup 32 of 32 threads in ([\d.]+) ms`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "wake", "-w", "8", "-t", "32"},
 	},
 	Microbenchmark{
@@ -90,7 +83,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       10000,
 		Unit:         "ms",
 		Pattern:      regexp.MustCompile(`Avg per-thread latency \(waking 1/64 threads\) in ([\d.]+) ms`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "wake-parallel", "-t", "64"},
 	},
 	Microbenchmark{
@@ -99,7 +92,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       1000,
 		Unit:         "ms",
 		Pattern:      regexp.MustCompile(`Requeued 32 of 32 threads in ([\d.]+) ms`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "requeue", "-t", "32"},
 	},
 	Microbenchmark{
@@ -108,7 +101,7 @@ var microbenchmarks = []Microbenchmark{
 		Factor:       1 / 4.0,
 		Unit:         "ops/sec",
 		Pattern:      regexp.MustCompile(`Averaged (\d+) operations/sec`),
-		Program:      ProgramPerf,
+		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "lock-pi"},
 	},
 }
