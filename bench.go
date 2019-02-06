@@ -1,12 +1,13 @@
 package main
 
 import (
-	"runtime"
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
+
 	"github.com/cockroachdb/apd"
 )
 
@@ -49,7 +50,7 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 	return
 }
 
-func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
+func runMicrobenchmarks(trials uint, speed Speed, monitorPower bool, powerInterval uint) {
 	c := apd.BaseContext.WithPrecision(5)
 	ed := apd.MakeErrDecimal(c)
 	final := apd.New(1, 0) // Initial value for multiplied scores
@@ -63,10 +64,15 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 
 	beforeTrials := time.Now()
 	for curTrial = 0; curTrial < trials; curTrial++ {
-		fmt.Printf("Trial %d:\n", curTrial + 1)
+		fmt.Printf("Trial %d:\n", curTrial+1)
 
 		var accumulated float64
 		for _, mb := range microbenchmarks {
+			// Only run benchmark if speed is at desired speed or faster
+			if mb.Speed < speed {
+				continue
+			}
+
 			fmt.Printf("  %s: ", mb.Name)
 
 			beforeBench := time.Now()
@@ -88,7 +94,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 	var powerMean float64
 	if monitorPower {
 		stopChan <- powerResultChan
-		powerMean = <- powerResultChan
+		powerMean = <-powerResultChan
 		powerMean *= 1000 // W -> mW
 	}
 

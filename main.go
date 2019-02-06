@@ -1,12 +1,12 @@
 package main
 
 import (
-	"io/ioutil"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"os/user"
 	"os/exec"
+	"os/user"
 )
 
 // GChargeStopLevel is the path to the kernel battery charge limit pseudo-file.
@@ -29,6 +29,8 @@ func cmdMain() int {
 	flag.UintVar(&powerInterval, "power-interval", 250, "The interval in milliseconds at which to sample power usage during benchmarks.")
 	var stopAndroid bool
 	flag.BoolVar(&stopAndroid, "stop-android", true, "Whether to stop most of the Android system to prevent interference and reduce variables. Android will be restarted automatically when the benchmarks finish.")
+	var rawSpeed uint
+	flag.UintVar(&rawSpeed, "speed", 0, "The speed at which to run at, skipping slower benchmarks if necessary. Benchmark results from one speed level are not comparable to others. Available speed classes: 0 = slow (all), 1 = medium (most), and 2 = fast (some).")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options]
@@ -45,6 +47,12 @@ Supported options:
 		fmt.Fprintf(os.Stderr, "Trial count must be non-zero!\n")
 		return 1
 	}
+
+	if rawSpeed >= uint(MaxSpeed) {
+		fmt.Fprintf(os.Stderr, "Invalid speed %d! Available classes: 0 (slow), 1 (medium), 2 (fast)\n", rawSpeed)
+		return 1
+	}
+	speed := Speed(rawSpeed)
 
 	user, err := user.Current()
 	check(err)
@@ -88,7 +96,7 @@ Supported options:
 
 	os.Stderr.Sync()
 	fmt.Print("\n")
-	runMicrobenchmarks(trials, monitorPower, powerInterval)
+	runMicrobenchmarks(trials, speed, monitorPower, powerInterval)
 
 	return 0
 }
