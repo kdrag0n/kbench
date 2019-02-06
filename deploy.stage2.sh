@@ -1,3 +1,3 @@
 #!/system/bin/sh -e
-cd /data/local/tmp
+cd /data/local/tmp/kb
 ./kbench "$@"
