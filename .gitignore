@@ -20,3 +20,5 @@
 /kbench
 /kbench.tar*
 /res*.txt
+/sysbench
+/perf
