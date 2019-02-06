@@ -43,14 +43,14 @@ Supported options:
 
 	if trials == 0 {
 		fmt.Fprintf(os.Stderr, "Trial count must be non-zero!\n")
-		os.Exit(1)
+		return 1
 	}
 
 	user, err := user.Current()
 	check(err)
 	if user.Uid != "0" {
 		fmt.Fprintf(os.Stderr, "Must be run as root!\n")
-		os.Exit(1)
+		return 1
 	}
 
 	_, err = os.Stat(GChargeStopLevel)
