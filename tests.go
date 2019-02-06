@@ -37,7 +37,7 @@ var microbenchmarks = []Microbenchmark{
 		MoreIsBetter: false,
 		Factor:       1,
 		Unit:         "ms",
-		Pattern:      regexp.MustCompile(`([\d.]+)\s+task-clock \(msec\)`),
+		Pattern:      regexp.MustCompile(`([\d.]+)\s+(?:msec\s+)?task-clock`),
 		Program:      "perf",
 		Arguments:    []string{"stat", "-B", "dd", "if=/dev/zero", "of=/dev/null", "count=1000000"},
 	},
