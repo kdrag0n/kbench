@@ -87,7 +87,7 @@ Supported options:
 	}
 
 	os.Stderr.Sync()
-	fmt.Print("Running benchmarks...\n\n")
+	fmt.Print("\n")
 	runMicrobenchmarks(trials, monitorPower, powerInterval)
 
 	return 0
