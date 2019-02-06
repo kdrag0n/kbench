@@ -25,6 +25,7 @@ type Microbenchmark struct {
 	Program      string
 	Arguments    []string
 	Speed        Speed
+	CacheOutput  bool
 }
 
 var microbenchmarks = []Microbenchmark{
@@ -37,6 +38,7 @@ var microbenchmarks = []Microbenchmark{
 		Program:      "sysbench",
 		Arguments:    []string{"100000", "25", "3"},
 		Speed:        Medium,
+		CacheOutput:  true,
 	},
 	Microbenchmark{
 		Name:         "Basic vDSO call",
@@ -47,6 +49,7 @@ var microbenchmarks = []Microbenchmark{
 		Program:      "sysbench",
 		Arguments:    []string{"100000", "25", "3"},
 		Speed:        Medium,
+		CacheOutput:  true,
 	},
 	Microbenchmark{
 		Name:         "In-memory I/O",

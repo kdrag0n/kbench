@@ -1,6 +1,7 @@
 package main
 
 import (
+	"hash/fnv"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,11 +13,21 @@ import (
 )
 
 // Run the microbenchmark and calculate a normalized score from the results
-func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
+func (mb *Microbenchmark) Run(resultCache map[uint64][]byte) (score float64, rawValue float64, err error) {
 	var out []byte
+	var progPath string
+	var hash uint64
+	foundHash := false
+
+	if mb.CacheOutput {
+		hash = mb.HashCmd()
+		if out, foundHash = resultCache[hash]; foundHash {
+			goto skipRun
+		}
+	}
 
 	// Use bundled program if possible, otherwise resort to system PATH
-	progPath := runtime.GOARCH + "/" + mb.Program
+	progPath = runtime.GOARCH + "/" + mb.Program
 	if _, err = os.Stat(progPath); err != nil {
 		if !os.IsNotExist(err) { // Not existing is normal, anything else is a warning
 			fmt.Fprintf(os.Stderr, "Unable to stat '%s': %v; resorting to system PATH\n", progPath, err)
@@ -26,6 +37,7 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 	}
 	out, err = exec.Command(progPath, mb.Arguments...).CombinedOutput()
 
+skipRun:
 	matches := mb.Pattern.FindSubmatch(out)
 	if len(matches) < 2 {
 		fmt.Print("\n")
@@ -47,7 +59,22 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 		score = 0
 	}
 
+	if mb.CacheOutput && !foundHash {
+		resultCache[hash] = out
+	}
+
 	return
+}
+
+// HashCmd returns a 64-bit FNV-1a hash of this Microbenchmark's command.
+func (mb *Microbenchmark) HashCmd() uint64 {
+	hash := fnv.New64a()
+	hash.Write([]byte(mb.Program))
+	for _, arg := range mb.Arguments {
+		hash.Write([]byte(arg))
+	}
+
+	return hash.Sum64()
 }
 
 func runMicrobenchmarks(trials uint, speed Speed, monitorPower bool, powerInterval uint) {
@@ -67,6 +94,7 @@ func runMicrobenchmarks(trials uint, speed Speed, monitorPower bool, powerInterv
 		fmt.Printf("Trial %d:\n", curTrial+1)
 
 		var accumulated float64
+		resultCache := make(map[uint64][]byte)
 		for _, mb := range microbenchmarks {
 			// Only run benchmark if speed is at desired speed or faster
 			if mb.Speed < speed {
@@ -76,7 +104,7 @@ func runMicrobenchmarks(trials uint, speed Speed, monitorPower bool, powerInterv
 			fmt.Printf("  %s: ", mb.Name)
 
 			beforeBench := time.Now()
-			score, rawValue, err := mb.Run()
+			score, rawValue, err := mb.Run(resultCache)
 			check(err)
 
 			fmt.Printf("%.2f %s, score: %.0f, time: %s\n", rawValue, mb.Unit, score, formatDuration(time.Since(beforeBench)))
