@@ -53,17 +53,9 @@ Supported options:
 		os.Exit(1)
 	}
 
-	fmt.Println("Preparing environment...")
-	setupPerfEnv()
-	defer cleanupPerfEnv()
-
-	fmt.Print("Running warmup round...")
-	runWarmup()
-	fmt.Print("\n")
-
 	_, err = os.Stat(GChargeStopLevel)
 	if monitorPower {
-		if os.IsNotExist(err) {
+		if !os.IsNotExist(err) {
 			before, err := ioutil.ReadFile(GChargeStopLevel)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Unable to back up charge limit: %v\n", err)
@@ -94,7 +86,8 @@ Supported options:
 		}()
 	}
 
-	fmt.Print("Running benchmark...\n\n")
+	os.Stderr.Sync()
+	fmt.Print("Running benchmarks...\n\n")
 	runMicrobenchmarks(trials, monitorPower, powerInterval)
 
 	return 0

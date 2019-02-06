@@ -15,9 +15,9 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 
 	switch mb.Program {
 	case ProgramSysbench:
-		out, err = exec.Command("./sysbench_" + runtime.GOARCH, mb.Arguments...).Output()
+		out, err = exec.Command("./sysbench_" + runtime.GOARCH, mb.Arguments...).CombinedOutput()
 	case ProgramPerf:
-		out, err = execPerf(mb.Arguments...)
+		out, err = exec.Command("./perf_" + runtime.GOARCH, mb.Arguments...).CombinedOutput()
 	default:
 		err = fmt.Errorf("microbenchmark '%s': Unsupported program %s", mb.Name, mb.Program)
 	}
@@ -27,6 +27,7 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 
 	matches := mb.Pattern.FindSubmatch(out)
 	if len(matches) < 2 {
+		fmt.Print("\n")
 		fmt.Println(string(out))
 		err = fmt.Errorf("microbenchmark '%s': Output of %s does not match expected format", mb.Name, mb.Program)
 		return
@@ -46,18 +47,6 @@ func (mb *Microbenchmark) Run() (score float64, rawValue float64, err error) {
 	}
 
 	return
-}
-
-func runWarmup() {
-	for _, mb := range microbenchmarks {
-		_, _, err := mb.Run()
-		if err != nil {
-			fmt.Print("\n")
-			panic(err)
-		}
-
-		fmt.Print(".")
-	}
 }
 
 func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {

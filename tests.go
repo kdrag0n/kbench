@@ -44,9 +44,9 @@ var microbenchmarks = []Microbenchmark{
 		MoreIsBetter: false,
 		Factor:       1,
 		Unit:         "ms",
-		Pattern:      regexp.MustCompile(`([\d.]+) msec task-clock`),
+		Pattern:      regexp.MustCompile(`([\d.]+)\s+task-clock \(msec\)`),
 		Program:      ProgramPerf,
-		Arguments:    []string{"stat", "-B", "/dd", "if=/dev/zero", "of=/dev/null", "count=1000000"},
+		Arguments:    []string{"stat", "-B", "dd", "if=/dev/zero", "of=/dev/null", "count=1000000"},
 	},
 	Microbenchmark{
 		Name:         "IPC messaging",
