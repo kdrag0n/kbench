@@ -67,7 +67,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 
 		var accumulated float64
 		for _, mb := range microbenchmarks {
-			fmt.Printf("%s: ", mb.Name)
+			fmt.Printf("  %s: ", mb.Name)
 
 			score, rawValue, err := mb.Run()
 			check(err)
