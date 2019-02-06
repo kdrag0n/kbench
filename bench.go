@@ -63,8 +63,9 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 
 	before := time.Now()
 	for curTrial = 0; curTrial < trials; curTrial++ {
-		var accumulated float64
+		fmt.Printf("Trial %d:\n", curTrial + 1)
 
+		var accumulated float64
 		for _, mb := range microbenchmarks {
 			fmt.Printf("%s: ", mb.Name)
 
@@ -75,7 +76,7 @@ func runMicrobenchmarks(trials uint, monitorPower bool, powerInterval uint) {
 			accumulated += score
 		}
 
-		fmt.Printf("Trial %d score: %.0f\n\n", curTrial+1, accumulated)
+		fmt.Printf("Score: %.0f\n\n", accumulated)
 		score, _, err := c.NewFromString(strconv.FormatFloat(accumulated, 'f', -1, 64))
 		check(err)
 		ed.Mul(final, final, score)
