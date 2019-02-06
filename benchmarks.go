@@ -4,6 +4,17 @@ import (
 	"regexp"
 )
 
+// A Speed represents a class of benchmark speeds.
+type Speed uint16
+
+// Speeds at which benchmarks are classified as
+const (
+	Slow Speed = iota
+	Medium
+	Fast
+	MaxSpeed
+)
+
 // Microbenchmark describes the details of a single microbenchmark.
 type Microbenchmark struct {
 	Name         string
@@ -13,6 +24,7 @@ type Microbenchmark struct {
 	Pattern      *regexp.Regexp
 	Program      string
 	Arguments    []string
+	Speed        Speed
 }
 
 var microbenchmarks = []Microbenchmark{
@@ -24,6 +36,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Syscall: (\d+) ns`),
 		Program:      "sysbench",
 		Arguments:    []string{"100000", "25", "3"},
+		Speed:        Medium,
 	},
 	Microbenchmark{
 		Name:         "Basic vDSO call",
@@ -33,6 +46,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Implicit: (\d+) ns`),
 		Program:      "sysbench",
 		Arguments:    []string{"100000", "25", "3"},
+		Speed:        Medium,
 	},
 	Microbenchmark{
 		Name:         "In-memory I/O",
@@ -42,6 +56,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`([\d.]+)\s+(?:msec\s+)?task-clock`),
 		Program:      "perf",
 		Arguments:    []string{"stat", "-B", "dd", "if=/dev/zero", "of=/dev/null", "count=1000000"},
+		Speed:        Fast,
 	},
 	Microbenchmark{
 		Name:         "IPC messaging",
@@ -51,6 +66,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Total time: ([\d.]+) \[sec\]`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "sched", "messaging"},
+		Speed:        Fast,
 	},
 	Microbenchmark{
 		Name:         "Pipe IPC",
@@ -60,6 +76,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`(\d+) ops/sec`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "sched", "pipe"},
+		Speed:        Slow,
 	},
 	Microbenchmark{
 		Name:         "Futex hashing",
@@ -69,6 +86,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Averaged (\d+) operations/sec`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "hash"},
+		Speed:        Slow,
 	},
 	Microbenchmark{
 		Name:         "Serial futex wakeups",
@@ -78,6 +96,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Wokeup 32 of 32 threads in ([\d.]+) ms`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "wake", "-w", "8", "-t", "32"},
+		Speed:        Fast,
 	},
 	Microbenchmark{
 		Name:         "Parallel futex wakeups",
@@ -87,6 +106,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Avg per-thread latency \(waking 1/64 threads\) in ([\d.]+) ms`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "wake-parallel", "-t", "64"},
+		Speed:        Fast,
 	},
 	Microbenchmark{
 		Name:         "Futex requeuing",
@@ -96,6 +116,7 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Requeued 32 of 32 threads in ([\d.]+) ms`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "requeue", "-t", "32"},
+		Speed:        Fast,
 	},
 	Microbenchmark{
 		Name:         "PI futex locking",
@@ -105,5 +126,6 @@ var microbenchmarks = []Microbenchmark{
 		Pattern:      regexp.MustCompile(`Averaged (\d+) operations/sec`),
 		Program:      "perf",
 		Arguments:    []string{"bench", "futex", "lock-pi"},
+		Speed:        Slow,
 	},
 }
