@@ -44,12 +44,12 @@ Supported options:
 	flag.Parse()
 
 	if trials == 0 {
-		fmt.Fprintf(os.Stderr, "Trial count must be non-zero!\n")
+		fmt.Fprintf(os.Stderr, "Trial count must be non-zero.\n")
 		return 1
 	}
 
 	if rawSpeed >= uint(MaxSpeed) {
-		fmt.Fprintf(os.Stderr, "Invalid speed %d! Available classes: 0 (slow), 1 (medium), 2 (fast)\n", rawSpeed)
+		fmt.Fprintf(os.Stderr, "Invalid speed %d. Available classes: 0 (slow), 1 (medium), 2 (fast)\n", rawSpeed)
 		return 1
 	}
 	speed := Speed(rawSpeed)
@@ -57,7 +57,7 @@ Supported options:
 	user, err := user.Current()
 	check(err)
 	if user.Uid != "0" {
-		fmt.Fprintf(os.Stderr, "Must be run as root!\n")
+		fmt.Fprintf(os.Stderr, "This program must be run as root.\n")
 		return 1
 	}
 
