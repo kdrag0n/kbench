@@ -65,7 +65,7 @@ Supported options:
 		voltNow := PsyPrefix + "voltage_now"
 		_, err = os.Stat(voltNow)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to check voltage: %v; disabling power monitor\n", voltNow, err)
+			fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
 			monitorPower = false
 			goto skipChargeLimit
 		}
