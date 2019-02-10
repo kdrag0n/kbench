@@ -134,7 +134,7 @@ var microbenchmarks = []Microbenchmark{
 	Microbenchmark{
 		Name:         "VFS file mmap",
 		MoreIsBetter: false,
-		Factor:       1 / 2.0,
+		Factor:       1 / 4.0,
 		Unit:         "ns",
 		Pattern:      regexp.MustCompile(`File via mmap: (\d+) ns`),
 		Program:      "sysbench",
@@ -145,7 +145,7 @@ var microbenchmarks = []Microbenchmark{
 	Microbenchmark{
 		Name:         "VFS file calls",
 		MoreIsBetter: false,
-		Factor:       1 / 3.0,
+		Factor:       1 / 6.0,
 		Unit:         "ns",
 		Pattern:      regexp.MustCompile(`File via fd I/O: (\d+) ns`),
 		Program:      "sysbench",
