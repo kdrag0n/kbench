@@ -1,20 +1,18 @@
 package main
 
 import (
-	"io/ioutil"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 )
 
 const PsyPrefix = "/sys/class/power_supply/battery/"
 
 func powerReadSys(attr string) float64 {
-	raw, err := ioutil.ReadFile(PsyPrefix + attr)
+	attrStr, err := readFileLine(PsyPrefix + attr)
 	check(err)
 
-	attrInt, err := strconv.Atoi(strings.TrimSuffix(string(raw), "\n"))
+	attrInt, err := strconv.Atoi(attrStr)
 	check(err)
 
 	return float64(attrInt)
