@@ -1,6 +1,8 @@
 package main
 
 import (
+	"syscall"
+	"os/signal"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -61,6 +63,16 @@ Supported options:
 		return 1
 	}
 
+	deferredFuncs := make([]func(), 0, 2)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		for _, fun := range deferredFuncs {
+			fun()
+		}
+	}()
+
 	if monitorPower {
 		voltNow := PsyPrefix + "voltage_now"
 		_, err = os.Stat(voltNow)
@@ -82,12 +94,14 @@ Supported options:
 				fmt.Fprintf(os.Stderr, "Unable to disable charging and power source: %v\n", err)
 			}
 
-			defer func() {
+			cLimitRestoreFunc := func() {
 				err = ioutil.WriteFile(GChargeStopLevel, before, 0644)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Unable to restore backed up charge limit: %v\n", err)
 				}
-			}()
+			}
+			defer cLimitRestoreFunc()
+			deferredFuncs = append(deferredFuncs, cLimitRestoreFunc)
 		} else {
 			fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage may not be accurate\n", err)
 		}
@@ -97,10 +111,13 @@ skipChargeLimit:
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
 		exec.Command("/system/bin/stop").Run()
-		defer func() {
+		
+		startAndroidFunc := func() {
 			fmt.Println("Restarting Android...")
 			exec.Command("/system/bin/start").Run()
-		}()
+		}
+		defer startAndroidFunc()
+		deferredFuncs = append(deferredFuncs, startAndroidFunc)
 	}
 
 	os.Stderr.Sync()
