@@ -111,6 +111,7 @@ Supported options:
 skipChargeLimit:
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
+		exec.Command("/system/bin/start blank_screen").Run()
 		exec.Command("/system/bin/stop").Run()
 
 		startAndroidFunc := func() {
