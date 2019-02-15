@@ -1,14 +1,15 @@
 package main
 
 import (
-	"syscall"
-	"os/signal"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
+	"syscall"
+	"time"
 )
 
 // GChargeStopLevel is the path to the kernel battery charge limit pseudo-file.
@@ -111,13 +112,16 @@ skipChargeLimit:
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
 		exec.Command("/system/bin/stop").Run()
-		
+
 		startAndroidFunc := func() {
 			fmt.Println("Restarting Android...")
 			exec.Command("/system/bin/start").Run()
 		}
 		defer startAndroidFunc()
 		deferredFuncs = append(deferredFuncs, startAndroidFunc)
+
+		fmt.Println("Waiting for processes to stop...")
+		time.Sleep(2 * time.Second)
 	}
 
 	os.Stderr.Sync()
