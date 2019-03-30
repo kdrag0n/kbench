@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// GChargeStopLevel is the path to the kernel battery charge limit pseudo-file.
-const GChargeStopLevel = "/sys/devices/platform/soc/soc:google,charger/charge_stop_level"
+// SysPwrSuspend is the path to the kernel sysfs node that disables charging.
+const SysPwrSuspend = "/sys/class/power_supply/battery/input_suspend"
 
 func check(err error) {
 	if err != nil {
@@ -80,35 +80,30 @@ Supported options:
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
 			monitorPower = false
-			goto skipChargeLimit
+			goto skipChgDisable
 		}
 
-		_, err = os.Stat(GChargeStopLevel)
+		_, err = os.Stat(SysPwrSuspend)
 		if !os.IsNotExist(err) {
-			before, err := ioutil.ReadFile(GChargeStopLevel)
+			err = ioutil.WriteFile(SysPwrSuspend, []byte("1"), 0644)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to back up charge limit: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Unable to disable charging: %v\n", err)
 			}
 
-			err = ioutil.WriteFile(GChargeStopLevel, []byte("2"), 0644)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to disable charging and power source: %v\n", err)
-			}
-
-			cLimitRestoreFunc := func() {
-				err = ioutil.WriteFile(GChargeStopLevel, before, 0644)
+			chgEnableFunc := func() {
+				err = ioutil.WriteFile(SysPwrSuspend, []byte("0"), 0644)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Unable to restore backed up charge limit: %v\n", err)
+					fmt.Fprintf(os.Stderr, "Unable to enable charging: %v\n", err)
 				}
 			}
-			defer cLimitRestoreFunc()
-			deferredFuncs = append(deferredFuncs, cLimitRestoreFunc)
+			defer chgEnableFunc()
+			deferredFuncs = append(deferredFuncs, chgEnableFunc)
 		} else {
-			fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage may not be accurate\n", err)
+			fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage will be inaccurate\n", err)
 		}
 	}
 
-skipChargeLimit:
+skipChgDisable:
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
 		exec.Command("/system/bin/start blank_screen").Run()
