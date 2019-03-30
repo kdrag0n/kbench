@@ -1,2 +1,2 @@
 # KBench
-A simple kernel benchmark.
+A kernel-oriented microbenchmark suite for Android devices.
