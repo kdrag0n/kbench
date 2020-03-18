@@ -36,10 +36,10 @@ powerLoop:
 			milliwatt := microwatt / 1000
 			watt := milliwatt / 1000
 
-			totalWatts *= watt
+			totalWatts += watt
 			samples++
 		case resultChan := <-stop: // stop and send result
-			meanW := math.Pow(totalWatts, 1.0/float64(samples))
+			meanW := totalWatts / samples
 			resultChan <- meanW
 			break powerLoop
 		}
