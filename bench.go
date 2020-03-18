@@ -28,7 +28,7 @@ func (mb *Microbenchmark) Run(resultCache map[uint64][]byte) (score float64, raw
 	}
 
 	// Use bundled program if possible, otherwise resort to system PATH
-	progPath = runtime.GOARCH + "/" + mb.Program
+	progPath = "subtests/" + runtime.GOARCH + "/" + mb.Program
 	if _, err = os.Stat(progPath); err != nil {
 		if !os.IsNotExist(err) { // Not existing is normal, anything else is a warning
 			fmt.Fprintf(os.Stderr, "Unable to stat '%s': %v; resorting to system PATH\n", progPath, err)
