@@ -11,13 +11,13 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.history
+# Visual Studio Code workspace settings
+.vscode/
+
+# Build artifacts and benchmark results
 /kbench
 /kbench.tar*
 /res*.txt
-/perf
+
+# cquery language server cache
+.cquery_cache/
