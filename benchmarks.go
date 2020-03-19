@@ -150,14 +150,4 @@ var benchmarks = []Benchmark{
 		Program:        "schbench",
 		Speed:          Slow,
 	},
-	Benchmark{
-		Name:           "Timer jitter",
-		RefValue:       82,
-		Unit:           "µs",
-		HigherIsBetter: false,
-		Pattern:        regexp.MustCompile(`Avg:\s+(\d+)`),
-		Program:        "cyclictest",
-		Arguments:      []string{"-qD", "5"},
-		Speed:          Fast,
-	},
 }
