@@ -100,7 +100,7 @@ Supported options:
 		exec.Command("/system/bin/stop").Run()
 
 		startAndroidFunc := func() {
-			fmt.Println("Restarting Android...")
+			fmt.Println("\nRestarting Android...")
 			exec.Command("/system/bin/start").Run()
 		}
 		defer startAndroidFunc()
