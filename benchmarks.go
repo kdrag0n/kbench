@@ -92,7 +92,7 @@ var benchmarks = []Benchmark{
 		Speed:          Medium,
 	},
 	Benchmark{
-		Name:           "Serial futex wakeup",
+		Name:           "Futex wakeup",
 		RefValue:       13.3,
 		Unit:           "ms",
 		HigherIsBetter: false,
@@ -142,7 +142,7 @@ var benchmarks = []Benchmark{
 		Speed:          Fast,
 	},
 	Benchmark{
-		Name:           "Scheduler wakeups",
+		Name:           "Scheduler wakeup",
 		RefValue:       59968,
 		Unit:           "µs",
 		HigherIsBetter: false,
