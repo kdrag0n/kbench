@@ -127,7 +127,7 @@ func runBenchmarks(trials int, speed Speed, monitorPower bool, powerInterval uin
 			check(err)
 
 			spaces := strings.Repeat(" ", maxBmNameLen-len(bm.Name))
-			fmt.Printf("%s%4.0f (%9.1f %4s; runtime: %3s)\n", spaces, benchScore, rawValue, bm.Unit, formatDuration(duration))
+			fmt.Printf("%s%4.0f  (%9.1f %4s; runtime: %3s)\n", spaces, benchScore, rawValue, bm.Unit, formatDuration(duration))
 			trialScore += benchScore
 		}
 
