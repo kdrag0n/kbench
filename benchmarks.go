@@ -4,6 +4,9 @@ import (
 	"regexp"
 )
 
+// RefScore is the score to normalize each reference to
+const RefScore = 500
+
 // A Speed represents a class of benchmark speeds.
 type Speed uint16
 
@@ -15,142 +18,156 @@ const (
 	MaxSpeed
 )
 
-// Microbenchmark describes the details of a single microbenchmark.
-type Microbenchmark struct {
-	Name         string
-	MoreIsBetter bool
-	Factor       float64
-	Unit         string
-	Pattern      *regexp.Regexp
-	Program      string
-	Arguments    []string
-	Speed        Speed
-	CacheOutput  bool
+// Benchmark describes the details of a single benchmark.
+type Benchmark struct {
+	Name           string
+	HigherIsBetter bool
+	RefValue       float64
+	Unit           string
+	Pattern        *regexp.Regexp
+	Program        string
+	Arguments      []string
+	Speed          Speed
 }
 
-var microbenchmarks = []Microbenchmark{
-	Microbenchmark{
-		Name:         "Basic syscall",
-		MoreIsBetter: false,
-		Factor:       2,
-		Unit:         "ns",
-		Pattern:      regexp.MustCompile(`Time syscall: (\d+) ns`),
-		Program:      "sysbench",
-		Arguments:    []string{"t", "100000", "25", "3"},
-		Speed:        Medium,
-		CacheOutput:  true,
+var benchmarks = []Benchmark{
+	Benchmark{
+		Name:           "Time syscall",
+		RefValue:       0,
+		Unit:           "ns",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Time syscall: (\d+) ns`),
+		Program:        "callbench",
+		Arguments:      []string{"t", "100000", "25", "3"},
+		Speed:          Medium,
 	},
-	Microbenchmark{
-		Name:         "Basic vDSO call",
-		MoreIsBetter: false,
-		Factor:       2,
-		Unit:         "ns",
-		Pattern:      regexp.MustCompile(`Time implicit: (\d+) ns`),
-		Program:      "sysbench",
-		Arguments:    []string{"t", "100000", "25", "3"},
-		Speed:        Medium,
-		CacheOutput:  true,
+	Benchmark{
+		Name:           "Time vDSO call",
+		RefValue:       0,
+		Unit:           "ns",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Time implicit: (\d+) ns`),
+		Program:        "callbench",
+		Arguments:      []string{"t", "100000", "25", "3"},
+		Speed:          Medium,
 	},
-	Microbenchmark{
-		Name:         "In-memory I/O",
-		MoreIsBetter: false,
-		Factor:       1,
-		Unit:         "ms",
-		Pattern:      regexp.MustCompile(`([\d.]+)\s+(?:msec\s+)?task-clock`),
-		Program:      "perf",
-		Arguments:    []string{"stat", "-B", "dd", "if=/dev/zero", "of=/dev/null", "count=1000000"},
-		Speed:        Fast,
+	Benchmark{
+		Name:           "In-memory I/O",
+		RefValue:       0,
+		Unit:           "s",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`copied, ([\d.]+) s,`),
+		Program:        "dd",
+		Arguments:      []string{"if=/dev/zero", "of=/dev/null", "count=10000000"},
+		Speed:          Fast,
 	},
-	Microbenchmark{
-		Name:         "IPC messaging",
-		MoreIsBetter: false,
-		Factor:       100,
-		Unit:         "sec",
-		Pattern:      regexp.MustCompile(`Total time: ([\d.]+) \[sec\]`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "sched", "messaging"},
-		Speed:        Fast,
+	Benchmark{
+		Name:           "IPC messaging",
+		RefValue:       0,
+		Unit:           "s",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Total time: ([\d.]+) \[sec\]`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "sched", "messaging", "-ptl", "8000"},
+		Speed:          Fast,
 	},
-	Microbenchmark{
-		Name:         "Pipe IPC",
-		MoreIsBetter: true,
-		Factor:       1 / 100.0,
-		Unit:         "ops/sec",
-		Pattern:      regexp.MustCompile(`(\d+) ops/sec`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "sched", "pipe"},
-		Speed:        Slow,
+	Benchmark{
+		Name:           "Pipes",
+		RefValue:       0,
+		Unit:           "op/s",
+		HigherIsBetter: true,
+		Pattern:        regexp.MustCompile(`(\d+) ops/sec`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "sched", "pipe"},
+		Speed:          Slow,
 	},
-	Microbenchmark{
-		Name:         "Futex hashing",
-		MoreIsBetter: true,
-		Factor:       1 / 10000.0,
-		Unit:         "ops/sec",
-		Pattern:      regexp.MustCompile(`Averaged (\d+) operations/sec`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "futex", "hash"},
-		Speed:        Slow,
+	Benchmark{
+		Name:           "Futex hashing",
+		RefValue:       0,
+		Unit:           "op/s",
+		HigherIsBetter: true,
+		Pattern:        regexp.MustCompile(`Averaged (\d+) operations/sec`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "futex", "hash"},
+		Speed:          Slow,
 	},
-	Microbenchmark{
-		Name:         "Serial futex wakeups",
-		MoreIsBetter: false,
-		Factor:       100,
-		Unit:         "ms",
-		Pattern:      regexp.MustCompile(`Wokeup 32 of 32 threads in ([\d.]+) ms`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "futex", "wake", "-w", "8", "-t", "32"},
-		Speed:        Fast,
+	Benchmark{
+		Name:           "Serial futex wakeups",
+		RefValue:       0,
+		Unit:           "ms",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Wokeup \d+ of \d+ threads in ([\d.]+) ms`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "futex", "wake", "-w", "8", "-t", "2048"},
+		Speed:          Fast,
 	},
-	Microbenchmark{
-		Name:         "Parallel futex wakeups",
-		MoreIsBetter: false,
-		Factor:       10000,
-		Unit:         "ms",
-		Pattern:      regexp.MustCompile(`Avg per-thread latency \(waking 1/64 threads\) in ([\d.]+) ms`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "futex", "wake-parallel", "-t", "64"},
-		Speed:        Fast,
+	Benchmark{
+		Name:           "Parallel futex wakeups",
+		RefValue:       0,
+		Unit:           "ms",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Avg per-thread latency \(waking 1/\d+ threads\) in ([\d.]+) ms`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "futex", "wake-parallel", "-t", "2048"},
+		Speed:          Fast,
 	},
-	Microbenchmark{
-		Name:         "Futex requeuing",
-		MoreIsBetter: false,
-		Factor:       1000,
-		Unit:         "ms",
-		Pattern:      regexp.MustCompile(`Requeued 32 of 32 threads in ([\d.]+) ms`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "futex", "requeue", "-t", "32"},
-		Speed:        Fast,
+	Benchmark{
+		Name:           "Futex requeuing",
+		RefValue:       0,
+		Unit:           "ms",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Requeued \d+ of \d+ threads in ([\d.]+) ms`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "futex", "requeue", "-t", "2048"},
+		Speed:          Fast,
 	},
-	Microbenchmark{
-		Name:         "PI futex locking",
-		MoreIsBetter: true,
-		Factor:       1 / 4.0,
-		Unit:         "ops/sec",
-		Pattern:      regexp.MustCompile(`Averaged (\d+) operations/sec`),
-		Program:      "perf",
-		Arguments:    []string{"bench", "futex", "lock-pi"},
-		Speed:        Slow,
+	Benchmark{
+		Name:           "PI futex locking",
+		RefValue:       0,
+		Unit:           "op/s",
+		HigherIsBetter: true,
+		Pattern:        regexp.MustCompile(`Averaged (\d+) operations/sec`),
+		Program:        "perf",
+		Arguments:      []string{"bench", "futex", "lock-pi"},
+		Speed:          Slow,
 	},
-	Microbenchmark{
-		Name:         "VFS file mmap",
-		MoreIsBetter: false,
-		Factor:       1 / 4.0,
-		Unit:         "ns",
-		Pattern:      regexp.MustCompile(`File via mmap: (\d+) ns`),
-		Program:      "sysbench",
-		Arguments:    []string{"f"},
-		Speed:        Medium,
-		CacheOutput:  true,
+	Benchmark{
+		Name:           "VFS mmap",
+		RefValue:       0,
+		Unit:           "ns",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`mmap: (\d+) ns`),
+		Program:        "callbench",
+		Arguments:      []string{"f"},
+		Speed:          Medium,
 	},
-	Microbenchmark{
-		Name:         "VFS file calls",
-		MoreIsBetter: false,
-		Factor:       1 / 6.0,
-		Unit:         "ns",
-		Pattern:      regexp.MustCompile(`File via fd I/O: (\d+) ns`),
-		Program:      "sysbench",
-		Arguments:    []string{"f"},
-		Speed:        Medium,
-		CacheOutput:  true,
+	Benchmark{
+		Name:           "VFS I/O syscalls",
+		RefValue:       0,
+		Unit:           "ns",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`syscalls: (\d+) ns`),
+		Program:        "callbench",
+		Arguments:      []string{"f"},
+		Speed:          Medium,
+	},
+	Benchmark{
+		Name:           "Scheduler wakeups",
+		RefValue:       0,
+		Unit:           "µs",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`99.0th: (\d+)`),
+		Program:        "schbench",
+		Speed:          Medium,
+	},
+	Benchmark{
+		Name:           "Timer jitter",
+		RefValue:       0,
+		Unit:           "µs",
+		HigherIsBetter: false,
+		Pattern:        regexp.MustCompile(`Avg:\s+(\d+)`),
+		Program:        "cyclictest",
+		Arguments:      []string{"-qD", "5"},
+		Speed:          Medium,
 	},
 }

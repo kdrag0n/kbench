@@ -14,10 +14,12 @@
 # Visual Studio Code workspace settings
 .vscode/
 
-# Build artifacts and benchmark results
+# Build artifacts
 /kbench
 /kbench.tar*
-/res*.txt
+
+# Benchmark results
+results/
 
 # cquery language server cache
 .cquery_cache/

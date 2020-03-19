@@ -22,10 +22,8 @@ func check(err error) {
 }
 
 func cmdMain() int {
-	fmt.Println("KBench by @kdrag0n")
-
-	var trials uint
-	flag.UintVar(&trials, "trials", 3, "The number of times to run all the microbenchmarks. The geometric mean of each trial's score is calculated for the final score.")
+	var trials int
+	flag.IntVar(&trials, "trials", 3, "The number of times to run all the benchmarks. The geometric mean of each trial's score is calculated for the final score.")
 	var monitorPower bool
 	flag.BoolVar(&monitorPower, "power", true, "Whether to monitor system power usage during the test. Only works accurately on Google Pixel devices.")
 	var powerInterval uint
@@ -37,7 +35,6 @@ func cmdMain() int {
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options]
-Option format: -[name]=[value]
 Example usage: kbench -trials=5 -power=false -stop-android=false
 
 Supported options:
@@ -74,15 +71,7 @@ Supported options:
 		}
 	}()
 
-	if monitorPower {
-		voltNow := PsyPrefix + "voltage_now"
-		_, err = os.Stat(voltNow)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
-			monitorPower = false
-			goto skipChgDisable
-		}
-
+	if _, err = os.Stat(PsyPrefix + "voltage_now"); monitorPower && err != nil {
 		_, err = os.Stat(SysPwrSuspend)
 		if !os.IsNotExist(err) {
 			err = ioutil.WriteFile(SysPwrSuspend, []byte("1"), 0644)
@@ -101,9 +90,10 @@ Supported options:
 		} else {
 			fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage will be inaccurate\n", err)
 		}
+	} else if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
 	}
 
-skipChgDisable:
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
 		exec.Command("/system/bin/start blank_screen").Run()
@@ -122,7 +112,7 @@ skipChgDisable:
 
 	os.Stderr.Sync()
 	fmt.Print("\n")
-	runMicrobenchmarks(trials, speed, monitorPower, powerInterval)
+	runBenchmarks(trials, speed, monitorPower, powerInterval)
 
 	return 0
 }

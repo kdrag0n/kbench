@@ -1,11 +1,11 @@
 package main
 
 import (
-	"math"
 	"strconv"
 	"time"
 )
 
+// PsyPrefix is the path prefix for power supply properties
 const PsyPrefix = "/sys/class/power_supply/battery/"
 
 func powerReadSys(attr string) float64 {
@@ -20,27 +20,22 @@ func powerReadSys(attr string) float64 {
 
 func powerMonitor(interval uint, stop chan chan float64) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
-	var totalWatts float64 = 1 // mW
+	var totalMw float64 = 0
 	samples := 0
 
 powerLoop:
 	for {
 		select {
 		case <-ticker.C: // check current usage
-			microamp := powerReadSys("current_now")
-			microvolt := powerReadSys("voltage_now")
-			milliamp := microamp / 1000
-			millivolt := microvolt / 1000
+			ma := powerReadSys("current_now") / 1000
+			mv := powerReadSys("voltage_now") / 1000
+			mw := ma * mv / 1000
 
-			microwatt := milliamp * millivolt
-			milliwatt := microwatt / 1000
-			watt := milliwatt / 1000
-
-			totalWatts += watt
+			totalMw += mw
 			samples++
 		case resultChan := <-stop: // stop and send result
-			meanW := totalWatts / samples
-			resultChan <- meanW
+			meanMw := totalMw / float64(samples)
+			resultChan <- meanMw
 			break powerLoop
 		}
 	}

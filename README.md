@@ -1,2 +1,3 @@
-# KBench
-A kernel-oriented microbenchmark suite for Android devices.
+# Kbench
+
+A kernel microbenchmark suite for Android devices.

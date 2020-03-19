@@ -1,49 +1,57 @@
 package main
 
 import (
-	"hash/fnv"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
-
-	"github.com/cockroachdb/apd"
 )
 
-// Run the microbenchmark and calculate a normalized score from the results
-func (mb *Microbenchmark) Run(resultCache map[uint64][]byte) (score float64, rawValue float64, cached bool, err error) {
+type execResult struct {
+	duration time.Duration
+	out      []byte
+}
+
+type resultCache map[uint64]execResult
+
+// Run the benchmark and calculate a normalized score from the results
+func (bm *Benchmark) Run(cache resultCache) (score float64, rawValue float64, duration time.Duration, err error) {
 	var out []byte
-	var progPath string
-	var hash uint64
-	foundHash := false
 
-	if mb.CacheOutput {
-		hash = mb.HashCmd()
-		if out, foundHash = resultCache[hash]; foundHash {
-			cached = true
-			goto skipRun
+	hash := bm.HashCmd()
+	if result, cached := cache[hash]; cached {
+		out = result.out
+		duration = result.duration
+	} else {
+		// Use bundled program if possible, otherwise resort to system PATH
+		progPath := "subtests/" + runtime.GOARCH + "/" + bm.Program
+		if _, err = os.Stat(progPath); err != nil {
+			if !os.IsNotExist(err) { // Not existing is normal, anything else is a warning
+				fmt.Fprintf(os.Stderr, "Unable to stat '%s': %v; resorting to system PATH\n", progPath, err)
+			}
+
+			progPath = bm.Program
+		}
+
+		before := time.Now()
+		out, err = exec.Command(progPath, bm.Arguments...).CombinedOutput()
+		duration = time.Since(before)
+
+		cache[hash] = execResult{
+			out:      out,
+			duration: duration,
 		}
 	}
 
-	// Use bundled program if possible, otherwise resort to system PATH
-	progPath = "subtests/" + runtime.GOARCH + "/" + mb.Program
-	if _, err = os.Stat(progPath); err != nil {
-		if !os.IsNotExist(err) { // Not existing is normal, anything else is a warning
-			fmt.Fprintf(os.Stderr, "Unable to stat '%s': %v; resorting to system PATH\n", progPath, err)
-		}
-
-		progPath = mb.Program
-	}
-	out, err = exec.Command(progPath, mb.Arguments...).CombinedOutput()
-
-skipRun:
-	matches := mb.Pattern.FindSubmatch(out)
+	matches := bm.Pattern.FindSubmatch(out)
 	if len(matches) < 2 {
 		fmt.Print("\n")
 		fmt.Println(string(out))
-		err = fmt.Errorf("microbenchmark '%s': Output of %s does not match expected format", mb.Name, mb.Program)
+		err = fmt.Errorf("benchmark '%s': Output of %s doesn't match expected format", bm.Name, bm.Program)
 		return
 	}
 
@@ -52,103 +60,96 @@ skipRun:
 		return
 	}
 
-	score = rawValue * mb.Factor
-	if !mb.MoreIsBetter {
-		score = 1000 - score
-	}
-	if score < 0 {
-		score = 0
-	}
-
-	if mb.CacheOutput && !foundHash {
-		resultCache[hash] = out
+	// Only calculate score if a reference is available
+	if bm.RefValue != 0 {
+		// Normalize to reference
+		score = rawValue / bm.RefValue
+		// Invert if lower is better
+		if !bm.HigherIsBetter {
+			score = 1 - (score - 1)
+		}
+		// Scale up to the target score
+		score *= RefScore
+		// Set a minimum bound of 0
+		if score < 0 {
+			score = 0
+		}
 	}
 
 	return
 }
 
-// HashCmd returns a 64-bit FNV-1a hash of this Microbenchmark's command.
-func (mb *Microbenchmark) HashCmd() uint64 {
+// HashCmd returns a 64-bit FNV-1a hash of this Benchmark's command.
+func (bm *Benchmark) HashCmd() uint64 {
 	hash := fnv.New64a()
-	hash.Write([]byte(mb.Program))
-	for _, arg := range mb.Arguments {
+	hash.Write([]byte(bm.Program))
+	for _, arg := range bm.Arguments {
 		hash.Write([]byte(arg))
 	}
 
 	return hash.Sum64()
 }
 
-func runMicrobenchmarks(trials uint, speed Speed, monitorPower bool, powerInterval uint) {
-	c := apd.BaseContext.WithPrecision(5)
-	ed := apd.MakeErrDecimal(c)
-	final := apd.New(1, 0) // Initial value for multiplied scores
-	var curTrial uint
+func getMaxBmNameLen() (max int) {
+	for _, bm := range benchmarks {
+		nl := len(bm.Name)
+		if nl > max {
+			max = nl
+		}
+	}
 
+	return
+}
+
+func runBenchmarks(trials int, speed Speed, monitorPower bool, powerInterval uint) {
 	stopChan := make(chan chan float64)
-	powerResultChan := make(chan float64, 1)
 	if monitorPower {
 		go powerMonitor(powerInterval, stopChan)
 	}
 
-	beforeTrials := time.Now()
-	for curTrial = 0; curTrial < trials; curTrial++ {
-		fmt.Printf("Trial %d:\n", curTrial+1)
+	// For calculating spaces
+	maxBmNameLen := getMaxBmNameLen()
 
-		var accumulated float64
-		resultCache := make(map[uint64][]byte)
-		for _, mb := range microbenchmarks {
-			// Only run benchmark if speed is at desired speed or faster
-			if mb.Speed < speed {
+	var allScores float64
+	beforeTrials := time.Now()
+	for trial := 0; trial < trials; trial++ {
+		fmt.Printf("Trial %d:\n", trial+1)
+
+		var trialScore float64
+		cache := make(resultCache, len(benchmarks))
+		for _, bm := range benchmarks {
+			if bm.Speed < speed {
 				continue
 			}
 
-			fmt.Printf("  %s: ", mb.Name)
-
-			beforeBench := time.Now()
-			score, rawValue, cached, err := mb.Run(resultCache)
+			fmt.Printf("  %s: ", bm.Name)
+			benchScore, rawValue, duration, err := bm.Run(cache)
 			check(err)
 
-			timeFmt := "%s"
-			if cached {
-				timeFmt = "[cached: %s]"
-			}
-			timeStr := fmt.Sprintf(timeFmt, formatDuration(time.Since(beforeBench)))
-			fmt.Printf("%.2f %s, score: %.0f, time: %s\n", rawValue, mb.Unit, score, timeStr)
-			accumulated += score
+			spaces := strings.Repeat(" ", maxBmNameLen-len(bm.Name))
+			fmt.Printf("%s%4.0f (%9.1f %4s; runtime: %3s)\n", spaces, benchScore, rawValue, bm.Unit, formatDuration(duration))
+			trialScore += benchScore
 		}
 
-		fmt.Printf("Score: %.0f\n\n", accumulated)
-		score, _, err := c.NewFromString(strconv.FormatFloat(accumulated, 'f', -1, 64))
-		check(err)
-		ed.Mul(final, final, score)
-		check(ed.Err())
+		fmt.Printf("Score: %.0f\n\n", trialScore)
+		allScores += trialScore
 	}
+	benchTime := time.Since(beforeTrials)
 
-	/* Get the geometric mean of the power usage during benchmarks */
-	var powerMean float64
+	var avgPowerMw float64
 	if monitorPower {
-		stopChan <- powerResultChan
-		powerMean = <-powerResultChan
-		powerMean *= 1000 // W -> mW
+		powerChan := make(chan float64, 1)
+		stopChan <- powerChan
+		avgPowerMw = <-powerChan
 	}
 
-	/* Take the geometric mean of `final` */
-	// nthRootPow := 1 / trials
-	nthRootPow := apd.New(1, 0)
-	ed.Quo(nthRootPow, nthRootPow, apd.New(int64(trials), 0))
-	check(ed.Err())
-	// Take the [trials]th root of the multiplied scores for the geometric mean
-	finalScore := apd.New(1, 0)
-	ed.Pow(finalScore, final, nthRootPow)
-	check(ed.Err())
-	// Convert the precise decimal into a float64 to display (we round it anyway)
-	finalScoreFloat, err := finalScore.Float64()
-	check(err)
+	avgScore := allScores / float64(trials)
 
 	/* Output results */
-	fmt.Printf("\nFinal score: %.0f\n", finalScoreFloat)
+	fmt.Printf("\nAverage score: %.0f\n", avgScore)
 	if monitorPower {
-		fmt.Printf("Power usage: %.0f mW\n", powerMean)
+		fmt.Printf("Average power usage: %.0f mW\n", avgPowerMw)
+		fmt.Printf("Energy usage: %.0f mWh\n", avgPowerMw*benchTime.Hours())
 	}
-	fmt.Printf("Time elapsed: %s\n", formatDuration(time.Since(beforeTrials)))
+	fmt.Printf("Time elapsed: %s\n", formatDuration(benchTime))
 }
