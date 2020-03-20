@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cockroachdb/apd"
 )
 
 type execResult struct {
@@ -102,6 +104,9 @@ func getMaxBmNameLen() (max int) {
 }
 
 func runBenchmarks(trials int, speed Speed, monitorPower bool, powerInterval uint) {
+	// For geometric mean's arbitrary decimals
+	decCtx := apd.BaseContext.WithPrecision(5)
+
 	stopChan := make(chan chan float64)
 	if monitorPower {
 		go powerMonitor(powerInterval, stopChan)
@@ -115,8 +120,9 @@ func runBenchmarks(trials int, speed Speed, monitorPower bool, powerInterval uin
 	for trial := 0; trial < trials; trial++ {
 		fmt.Printf("Trial %d:\n", trial+1)
 
-		var trialScore float64
+		trialCnt := apd.New(1, 0) // geometric mean counter; starts at 1 due to *
 		cache := make(resultCache, len(benchmarks))
+		bmExecuted := 0
 		for _, bm := range benchmarks {
 			if bm.Speed < speed {
 				continue
@@ -128,9 +134,16 @@ func runBenchmarks(trials int, speed Speed, monitorPower bool, powerInterval uin
 
 			spaces := strings.Repeat(" ", maxBmNameLen-len(bm.Name))
 			fmt.Printf("%s%4.0f  (%9.1f %4s; runtime: %3s)\n", spaces, benchScore, rawValue, bm.Unit, formatDuration(duration))
-			trialScore += benchScore
+
+			// Multiply the geometric mean counter: ts = ts * bs
+			_, err = decCtx.Mul(trialCnt, trialCnt, floatToDec(benchScore))
+			check(err)
+
+			bmExecuted++
 		}
 
+		trialScore, err := finishGeoMean(decCtx, bmExecuted, trialCnt)
+		check(err)
 		fmt.Printf("Score: %.0f\n\n", trialScore)
 		allScores += trialScore
 	}
