@@ -5,7 +5,7 @@ import (
 )
 
 // RefScore is the score to normalize each reference to
-const RefScore = 500
+const RefScore = 1000
 
 // A Speed represents a class of benchmark speeds.
 type Speed uint16
