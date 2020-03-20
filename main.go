@@ -96,8 +96,9 @@ Supported options:
 
 	if stopAndroid {
 		fmt.Println("Stopping Android...")
-		exec.Command("/system/bin/start blank_screen").Run()
 		exec.Command("/system/bin/stop").Run()
+		time.Sleep(1 * time.Second)
+		exec.Command("/system/bin/start blank_screen").Run()
 
 		startAndroidFunc := func() {
 			fmt.Println("\nRestarting Android...")
