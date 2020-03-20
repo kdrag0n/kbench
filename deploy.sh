@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -eufo pipefail
+cd "$(dirname "$0")"
 
 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w"
 adb shell mkdir -p /data/local/tmp/kb
