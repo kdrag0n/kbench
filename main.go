@@ -56,9 +56,9 @@ Supported options:
 
 	user, err := user.Current()
 	check(err)
-	if user.Uid != "0" {
-		fmt.Fprintf(os.Stderr, "This program must be run as root.\n")
-		return 1
+	if user.Uid != "0" && stopAndroid {
+		fmt.Fprintf(os.Stderr, "Not running as root; will not attempt to stop Android\n")
+		stopAndroid = false
 	}
 
 	deferredFuncs := make([]func(), 0, 2)
@@ -90,7 +90,7 @@ Supported options:
 				defer chgEnableFunc()
 				deferredFuncs = append(deferredFuncs, chgEnableFunc)
 			} else {
-				fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage will be inaccurate\n", err)
+				fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage may be inaccurate\n", err)
 			}
 		} else {
 			fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
