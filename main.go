@@ -71,27 +71,31 @@ Supported options:
 		}
 	}()
 
-	if _, err = os.Stat(PsyPrefix + "voltage_now"); monitorPower && err != nil {
-		_, err = os.Stat(SysPwrSuspend)
-		if !os.IsNotExist(err) {
-			err = ioutil.WriteFile(SysPwrSuspend, []byte("1"), 0644)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to disable charging: %v\n", err)
-			}
-
-			chgEnableFunc := func() {
-				err = ioutil.WriteFile(SysPwrSuspend, []byte("0"), 0644)
+	if monitorPower {
+		_, err = os.Stat(PsyPrefix + "voltage_now")
+		if err == nil {
+			_, err = os.Stat(SysPwrSuspend)
+			if !os.IsNotExist(err) {
+				err = ioutil.WriteFile(SysPwrSuspend, []byte("1"), 0644)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Unable to enable charging: %v\n", err)
+					fmt.Fprintf(os.Stderr, "Unable to disable charging: %v\n", err)
 				}
+	
+				chgEnableFunc := func() {
+					err = ioutil.WriteFile(SysPwrSuspend, []byte("0"), 0644)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Unable to enable charging: %v\n", err)
+					}
+				}
+				defer chgEnableFunc()
+				deferredFuncs = append(deferredFuncs, chgEnableFunc)
+			} else {
+				fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage will be inaccurate\n", err)
 			}
-			defer chgEnableFunc()
-			deferredFuncs = append(deferredFuncs, chgEnableFunc)
 		} else {
-			fmt.Fprintf(os.Stderr, "Cannot disable charging: %v; power usage will be inaccurate\n", err)
+			fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
+			monitorPower = false
 		}
-	} else if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to stat voltage_now: %v; disabling power monitor\n", err)
 	}
 
 	if stopAndroid {
