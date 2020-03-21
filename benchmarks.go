@@ -56,7 +56,7 @@ var benchmarks = []Benchmark{
 		RefValue:       5.9,
 		Unit:           "s",
 		HigherIsBetter: false,
-		Pattern:        regexp.MustCompile(`copied, ([\d.]+) s,`),
+		Pattern:        regexp.MustCompile(`([\d.]+) s`),
 		Program:        "dd",
 		Arguments:      []string{"if=/dev/zero", "of=/dev/null", "count=10000000"},
 		Speed:          Fast,
