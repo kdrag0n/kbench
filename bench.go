@@ -65,10 +65,10 @@ func (bm *Benchmark) Run(cache resultCache) (score float64, rawValue float64, du
 	// Only calculate score if a reference is available
 	if bm.RefValue != 0 {
 		// Normalize to reference
-		score = rawValue / bm.RefValue
-		// Invert if lower is better
-		if !bm.HigherIsBetter {
-			score = 1 - (score - 1)
+		if bm.HigherIsBetter {
+			score = rawValue / bm.RefValue
+		} else {
+			score = bm.RefValue / rawValue
 		}
 		// Scale up to the target score
 		score *= RefScore
