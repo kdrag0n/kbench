@@ -31,7 +31,7 @@ type Benchmark struct {
 }
 
 var benchmarks = []Benchmark{
-	Benchmark{
+	{
 		Name:           "Time syscall",
 		RefValue:       229,
 		Unit:           "ns",
@@ -41,7 +41,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"t", "100000", "25", "3"},
 		Speed:          Fast,
 	},
-	Benchmark{
+	{
 		Name:           "Time vDSO call",
 		RefValue:       35,
 		Unit:           "ns",
@@ -51,7 +51,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"t", "100000", "25", "3"},
 		Speed:          Fast,
 	},
-	Benchmark{
+	{
 		Name:           "Null block I/O",
 		RefValue:       5.9,
 		Unit:           "s",
@@ -61,7 +61,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"if=/dev/zero", "of=/dev/null", "count=10000000"},
 		Speed:          Fast,
 	},
-	Benchmark{
+	{
 		Name:           "IPC messaging",
 		RefValue:       18.7,
 		Unit:           "s",
@@ -71,7 +71,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"bench", "sched", "messaging", "-ptl", "8000"},
 		Speed:          Slow,
 	},
-	Benchmark{
+	{
 		Name:           "Futex hashing",
 		RefValue:       1814540,
 		Unit:           "op/s",
@@ -81,7 +81,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"bench", "futex", "hash"},
 		Speed:          Medium,
 	},
-	Benchmark{
+	{
 		Name:           "Futex wakeup",
 		RefValue:       124.6,
 		Unit:           "ms",
@@ -91,7 +91,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"bench", "futex", "wake", "-w", "8", "-t", "2048"},
 		Speed:          Medium,
 	},
-	Benchmark{
+	{
 		Name:           "Futex requeuing",
 		RefValue:       249.4,
 		Unit:           "ms",
@@ -101,7 +101,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"bench", "futex", "requeue", "-t", "2048"},
 		Speed:          Medium,
 	},
-	Benchmark{
+	{
 		Name:           "VFS mmap",
 		RefValue:       8486,
 		Unit:           "ns",
@@ -111,7 +111,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"f"},
 		Speed:          Medium,
 	},
-	Benchmark{
+	{
 		Name:           "VFS I/O syscalls",
 		RefValue:       9548,
 		Unit:           "ns",
@@ -121,7 +121,7 @@ var benchmarks = []Benchmark{
 		Arguments:      []string{"f"},
 		Speed:          Fast,
 	},
-	Benchmark{
+	{
 		Name:           "Scheduler wakeup",
 		RefValue:       36928,
 		Unit:           "µs",
