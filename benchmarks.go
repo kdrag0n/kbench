@@ -72,16 +72,6 @@ var benchmarks = []Benchmark{
 		Speed:          Slow,
 	},
 	Benchmark{
-		Name:           "Pipe IPC",
-		RefValue:       87784,
-		Unit:           "op/s",
-		HigherIsBetter: true,
-		Pattern:        regexp.MustCompile(`(\d+) ops/sec`),
-		Program:        "perf",
-		Arguments:      []string{"bench", "sched", "pipe"},
-		Speed:          Medium,
-	},
-	Benchmark{
 		Name:           "Futex hashing",
 		RefValue:       1814540,
 		Unit:           "op/s",
@@ -109,16 +99,6 @@ var benchmarks = []Benchmark{
 		Pattern:        regexp.MustCompile(`Requeued \d+ of \d+ threads in ([\d.]+) ms`),
 		Program:        "perf",
 		Arguments:      []string{"bench", "futex", "requeue", "-t", "2048"},
-		Speed:          Medium,
-	},
-	Benchmark{
-		Name:           "PI futex locking",
-		RefValue:       208,
-		Unit:           "op/s",
-		HigherIsBetter: true,
-		Pattern:        regexp.MustCompile(`Averaged (\d+) operations/sec`),
-		Program:        "perf",
-		Arguments:      []string{"bench", "futex", "lock-pi"},
 		Speed:          Medium,
 	},
 	Benchmark{
