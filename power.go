@@ -31,7 +31,8 @@ powerLoop:
 			mv := powerReadSys("voltage_now") / 1000
 			mw := ma * mv / 1000
 
-			totalMw += mw
+			// negate because drain will be negative
+			totalMw += -mw
 			samples++
 		case resultChan := <-stop: // stop and send result
 			meanMw := totalMw / float64(samples)
