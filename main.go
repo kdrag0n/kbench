@@ -119,6 +119,11 @@ Supported options:
 	fmt.Print("\n")
 	runBenchmarks(trials, speed, monitorPower, powerInterval)
 
+	kernelVer, err := readFileLine("/proc/version")
+	if err == nil {
+		fmt.Println("Kernel version:", kernelVer)
+	}
+
 	return 0
 }
 
