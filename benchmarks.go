@@ -28,6 +28,7 @@ type Benchmark struct {
 	Program        string
 	Arguments      []string
 	Speed          Speed
+	ValueFilter    func(float64) float64
 }
 
 var benchmarks = []Benchmark{
@@ -73,13 +74,16 @@ var benchmarks = []Benchmark{
 	},
 	{
 		Name:           "Futex hashing",
-		RefValue:       1814540,
-		Unit:           "op/s",
-		HigherIsBetter: true,
+		RefValue:       551.1,
+		Unit:           "ns",
+		HigherIsBetter: false,
 		Pattern:        regexp.MustCompile(`Averaged (\d+) operations/sec`),
 		Program:        "perf",
 		Arguments:      []string{"bench", "futex", "hash"},
 		Speed:          Medium,
+		ValueFilter:    func(ops float64) float64 {
+			return 1 / ops * 1e9
+		},
 	},
 	{
 		Name:           "Futex wakeup",

@@ -60,6 +60,10 @@ func (bm *Benchmark) Run(cache resultCache) (score float64, rawValue float64, du
 		return
 	}
 
+	if bm.ValueFilter != nil {
+		rawValue = bm.ValueFilter(rawValue)
+	}
+
 	// Only calculate score if a reference is available
 	if bm.RefValue != 0 {
 		// Normalize to reference
